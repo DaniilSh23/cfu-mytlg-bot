@@ -1,37 +1,21 @@
 import aiohttp as aiohttp
-from loguru import logger
-from settings.config import CHECK_USER_URL
+from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN
 
 
-async def post_for_check_user(tlg_username, tlg_id):
+async def post_for_write_user(tlg_id: str, tlg_username: str):
     """
-    POST запрос для проверки пользователя в системе Битрикс.
-
-    Принимает параметры:
-        tlg_username - username пользователя в телеграме
-        tlg_id - ID пользователя в телеграме
-
-    Возвращает статус коды:
-        200 - юзер успешно прошёл проверку,
-        400 - неверный запрос, стоит также проверить параметры запроса,
-        403 - юзер не прошёл проверку и не может получить доступ к боту,
-        502 - неудачный запрос к API Битрикса.
+    Вьюшка для стартовой записи или обновления в БД инфы о юзере телеграм.
     """
+    data = {
+        'token': TOKEN,
+        "tlg_id": tlg_id,
+        "tlg_username": tlg_username,
+    }
     async with aiohttp.ClientSession() as session:
-        async with session.post(url=CHECK_USER_URL, data={'tlg_username': tlg_username, 'tlg_id': tlg_id}) as response:
+        async with session.post(url=WRITE_USR_URL, data=data) as response:
             if response.status == 200:
-                logger.success(f'Успешный POST запрос для проверки юзера с tlg_username == {tlg_username}. Код 200')
-                return 200
-            elif response.status == 400:
-                logger.warning(f'Неудачный запрос для проверки юзера с tlg_username == {tlg_username}. Код 400')
-                return 400
-            elif response.status == 403:
-                logger.warning(f'Юзер с tlg_username == {tlg_username} не прошёл проверку в Битриксе. Код 403')
-                return 403
-            elif response.status == 502:
-                logger.warning(f'При проверке юзера с tlg_username == {tlg_username} не удался запрос к Битриксу '
-                               f'для записи tlg_id. Код 502')
-                return 502
+                MY_LOGGER.info(f"Успешный запрос для записи или обновления данных о юзере: {await response.json()}")
+                return True
             else:
-                logger.warning(f'Вообще хз, что тут произошло ещё.')
-                return
+                MY_LOGGER.error(f"Неудачный запрос для записи инфы о юзере: "
+                                f"status={response.status}|{response.text}|{await response.json()}")
