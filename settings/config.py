@@ -18,7 +18,6 @@ BASE_HOST_URL = os.environ.get('BASE_HOST_URL', 'http://127.0.0.1:8000/')
 WRITE_USR_URL = f'{BASE_HOST_URL}mytlg/write_usr/'
 
 # Ссылки на веб-страницы
-BASE_HOST_URL = 'https://yandex.ru/'    # TODO: это пока что заглушка, потом удалить
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
 
 # Состояния
