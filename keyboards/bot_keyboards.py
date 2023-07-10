@@ -1,12 +1,31 @@
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from keyboards.bot_buttons import BUTTONS_DCT
+from settings.config import START_SETTINGS_FORM
+
+
+async def start_handler_kbrd():
+    """
+    Формируем клавиатуру для стартового хэндлера.
+    """
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                text='➕ Подключить свои каналы',
+                web_app=WebAppInfo(url=START_SETTINGS_FORM)
+            )
+        ],
+        [
+            BUTTONS_DCT.get('COME_BACK_LATER')
+        ],
+    ])
 
 
 async def form_webapp_kbrd(form_link, btn_text):
     """
-    Формирование клавиатуры для перехода к форме, которая реализована через веб-приложение.
+    Формирование клавиатуры с одной WebApp кнопкой
     :param form_link: ссылка на веб-форму.
+    :param btn_text: текст кнопки.
     """
     return InlineKeyboardMarkup([
         [

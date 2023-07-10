@@ -1,7 +1,8 @@
 from pyrogram import filters
 from pyrogram.types import Message, CallbackQuery
 
-from settings.config import ANSWER_COMMENT_STATES
+
+'''НИЖЕ СТАРОЕ ДЛЯ ПРИМЕРА'''
 
 
 async def func_new_comment_filter(_, __, update: Message):
@@ -28,16 +29,6 @@ async def func_cancel_comment_answer_filter(_, __, update: CallbackQuery):
         return update.data.split()[0] == 'cancel_comment'
 
 
-async def func_send_comment_answer_filter(_, __, update: Message):
-    """
-    Фильтр сообщений - ответов на коммент.
-    """
-    comment_data = ANSWER_COMMENT_STATES.get(update.from_user.id)
-    if comment_data:
-        return comment_data.split()[0] == 'input_comment'
-
-
 new_comment_filter = filters.create(func_new_comment_filter)
 answer_comment_filter = filters.create(func_answer_comment_filter)
 cancel_comment_answer_filter = filters.create(func_cancel_comment_answer_filter)
-send_comment_answer_filter = filters.create(func_send_comment_answer_filter)

@@ -2,8 +2,8 @@ from pyrogram.types import InlineKeyboardButton
 
 
 BUTTONS_DCT = {
-    'CANCEL_COMMENT': InlineKeyboardButton(
-        text=f'❌ Отменить',
-        callback_data='cancel_comment'
+    'COME_BACK_LATER': InlineKeyboardButton(
+        text=f'Вернуться позже',
+        callback_data='come_back_later'
     ),
 }
