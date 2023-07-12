@@ -19,7 +19,10 @@ WRITE_USR_URL = f'{BASE_HOST_URL}mytlg/write_usr/'
 
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
-WRITE_INTERESTS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'  # TODO: изменить эндпоинт
+WRITE_INTERESTS_FORM = f'{BASE_HOST_URL}mytlg/write_interests/'
+# TODO: закомментить, это тест
+# START_SETTINGS_FORM = f'https://yandex.ru'
+# WRITE_INTERESTS_FORM = f'https://yandex.ru'
 
 # Состояния
 STATES_DCT = dict()

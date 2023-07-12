@@ -56,6 +56,6 @@ async def new_comment_kbrd(task_id):
 
 CANCEL_SEND_COMMENT_KBRD = InlineKeyboardMarkup([
     [
-        BUTTONS_DCT['CANCEL_COMMENT'],
+        BUTTONS_DCT['COME_BACK_LATER'],
     ],
 ])
