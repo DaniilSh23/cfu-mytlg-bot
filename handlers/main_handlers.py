@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
-from keyboards.bot_keyboards import start_handler_kbrd
+from keyboards.bot_keyboards import form_webapp_kbrd
 from secondary_functions.req_to_bot_api import post_for_write_user
-from settings.config import MY_LOGGER
+from settings.config import MY_LOGGER, WRITE_INTERESTS_FORM
 
 
 @Client.on_message(filters.command(['start', 'menu']))
@@ -13,9 +13,11 @@ async def start_handler(_, update):
     write_usr_rslt = await post_for_write_user(tlg_username=update.from_user.username, tlg_id=update.from_user.id)
     if write_usr_rslt:
         await update.reply_text(
-            text='Привет!\nЭтот бот поможет получать только самую важную информацию и здорово сэкономит Ваше время.\n'
-                 'Вы можете подключить каналы, которые уже есть в Вашем профиле Telegram или вернуться к этому позже.',
-            reply_markup=await start_handler_kbrd()
+            text=f'👋 Привет!\n\n⏳ Этот бот создан, чтобы экономить Ваше время.'
+                 f'\n\nКак?\n🌊 Он позволяет <b>не распылять внимание на бурный поток информации</b>, '
+                 f'а сам подготовит для Вас всё самое интересное и актуальное\n\n'
+                 f'✏️ <b>Для старта Вам необходимо только заполнить свои интересы.</b>',
+            reply_markup=await form_webapp_kbrd(form_link=WRITE_INTERESTS_FORM, btn_text='✏️ Записать интересы')
         )
 
     else:

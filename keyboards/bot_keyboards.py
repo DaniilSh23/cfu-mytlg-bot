@@ -4,23 +4,6 @@ from keyboards.bot_buttons import BUTTONS_DCT
 from settings.config import START_SETTINGS_FORM
 
 
-async def start_handler_kbrd():
-    """
-    Формируем клавиатуру для стартового хэндлера.
-    """
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                text='➕ Подключить свои каналы',
-                web_app=WebAppInfo(url=START_SETTINGS_FORM)
-            )
-        ],
-        [
-            BUTTONS_DCT.get('COME_BACK_LATER')
-        ],
-    ])
-
-
 async def form_webapp_kbrd(form_link, btn_text):
     """
     Формирование клавиатуры с одной WebApp кнопкой
@@ -38,6 +21,23 @@ async def form_webapp_kbrd(form_link, btn_text):
 
 
 '''НИЖЕ СТАРОЕ, ЛЕЖИТ ПОКА ЧТО ДЛЯ ПРИМЕРА'''
+
+
+async def start_handler_kbrd():
+    """
+    Формируем клавиатуру для стартового хэндлера.
+    """
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                text='➕ Подключить свои каналы',
+                web_app=WebAppInfo(url=START_SETTINGS_FORM)
+            )
+        ],
+        [
+            BUTTONS_DCT.get('COME_BACK_LATER')
+        ],
+    ])
 
 
 async def new_comment_kbrd(task_id):

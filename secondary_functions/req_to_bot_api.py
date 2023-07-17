@@ -18,4 +18,4 @@ async def post_for_write_user(tlg_id: str, tlg_username: str):
                 return True
             else:
                 MY_LOGGER.error(f"Неудачный запрос для записи инфы о юзере: "
-                                f"status={response.status}|{response.text}|{await response.json()}")
+                                f"status={response.status}|{response.text}")
