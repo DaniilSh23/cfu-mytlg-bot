@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from keyboards.bot_keyboards import form_webapp_kbrd
-from secondary_functions.req_to_bot_api import post_for_write_user
+from utils.req_to_bot_api import post_for_write_user
 from settings.config import MY_LOGGER, WRITE_INTERESTS_FORM
 
 
