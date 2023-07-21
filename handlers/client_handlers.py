@@ -10,7 +10,7 @@ from utils.req_to_bot_api import get_related_news, write_new_post
 
 
 @Client.on_message(filters.channel & listening_channel_filter)
-async def listening_chat_handler(client, update):  # TODO: дописать: приняли пост и сохранили его в БД
+async def listening_chat_handler(client, update):
     """
     Ловим апдейты от чатов, которые прослушиваем.
     """
@@ -28,19 +28,20 @@ async def listening_chat_handler(client, update):  # TODO: дописать: п�
         return
 
     post_is_unique = True
-    if related_news.get('related_news'):
+    if related_news.get('posts'):
         MY_LOGGER.debug(f'Вызываем фильтры')
-        post_filters = await PostFilters.complete_filtering(
+        post_filters_obj = PostFilters(
             new_post=update.text,
             old_posts=related_news.get('posts'),
             separator=related_news.get('separator'),
         )
-        if not all(post_filters.filtration_result):
+        filtration_rslt = await post_filters_obj.complete_filtering()
+        if not all(filtration_rslt):
+            MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
             post_is_unique = False
 
     if post_is_unique:
-        write_new_post_rslt = await write_new_post(ch_pk=this_channel.get("pk"), text=update.text)
-        # TODO: дописать обработку ответа на запрос для записи нового поста
+        await write_new_post(ch_pk=this_channel.get("pk"), text=update.text)
 
 
 # @Client.on_message()
