@@ -6,7 +6,7 @@ api_id = API_ID
 api_hash = API_HASH
 
 app = Client(
-    "my_acc2",
+    "my_acc_978",
     api_id=api_id, api_hash=api_hash,
 )
 

@@ -22,6 +22,7 @@ SET_ACC_RUN_FLAG_URL = f'{BASE_HOST_URL}mytlg/set_acc_run_flag/'
 GET_CHANNELS_URL = f'{BASE_HOST_URL}mytlg/get_channels/'
 GET_SETTINGS_URL = f'{BASE_HOST_URL}mytlg/get_settings/'
 GET_RELATED_NEWS = f'{BASE_HOST_URL}mytlg/related_news/'
+WRITE_SUBSCRIPTION_RSLT = f'{BASE_HOST_URL}mytlg/write_subs_rslt/'
 
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
