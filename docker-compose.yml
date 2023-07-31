@@ -1,0 +1,7 @@
+version: "3"
+services:
+  mytlg_bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
