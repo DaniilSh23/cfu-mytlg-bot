@@ -79,6 +79,7 @@ async def check_channel_async(app, channel_link):
 
     ch_hash = channel_link.split('/')[-1]
     join_target = channel_link if ch_hash.startswith('+') else f"@{ch_hash}"
+    error = None
     while True:
         try:
             await app.join_chat(join_target)
@@ -86,17 +87,17 @@ async def check_channel_async(app, channel_link):
             success = True
             break
 
-        except UserAlreadyParticipant as err:
-            MY_LOGGER.info(f'Получено исключение, что юзер уже участник канала: {err}. '
+        except UserAlreadyParticipant as error:
+            MY_LOGGER.info(f'Получено исключение, что юзер уже участник канала: {error}. '
                            f'Ждём 2 сек и берём инфу о чате')
             await asyncio.sleep(2)
             channel_obj = await app.get_chat(channel_link)
             success = True
             break
 
-        except FloodWait as err:
-            MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
-            await asyncio.sleep(int(err.value))
+        except FloodWait as error:
+            MY_LOGGER.info(f'Напоролся на флуд. Ждём {error.value} секунд')
+            await asyncio.sleep(int(error.value))
             MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
 
         except UserBannedInChannel as error:
