@@ -1,4 +1,4 @@
-from settings.config import WORKING_CLIENTS, MY_LOGGER
+from settings.config import WORKING_CLIENTS, MY_LOGGER, TOKEN, BOT_USERNAME
 import uvloop
 from pyrogram import Client
 
@@ -37,6 +37,12 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
 
     MY_LOGGER.debug(f'WORKING_CLIENTS.get(acc_pk) == {WORKING_CLIENTS.get(acc_pk)}')
     try:
+        MY_LOGGER.debug(f'Клиент {session_name!r} отправляет команду /start боту')
+        async with client as client:
+            print(TOKEN.split(':')[0])
+            send_start = await client.send_message(chat_id=BOT_USERNAME, text='/start')
+            MY_LOGGER.debug(f'Результат отправки клиентом {session_name!r} команды /start боту: {send_start}')
+
         await client.start()    # Стартуем клиент аккаунта
         stop_flag = WORKING_CLIENTS.get(acc_pk)[0]
         MY_LOGGER.success(f'Клиент {session_name!r} успешно запущен!')

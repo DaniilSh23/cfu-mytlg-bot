@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.environ.get('TOKEN', '5265303938:AAE1daGp-VJR0R15J9tHksR38hQlbCXMYdU')
+BOT_USERNAME = os.environ.get('BOT_USERNAME', 'CourseTrainBot')
 API_ID = os.environ.get('API_ID', '1234567890')
 API_HASH = os.environ.get('API_HASH', 'какой-то там хэш')
 BOT_MANAGER_ID = os.environ.get('BOT_MANAGER_ID', 1978587604)
