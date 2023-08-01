@@ -4,7 +4,7 @@ RUN mkdir /mytlg_bot
 
 COPY requirements.txt /mytlg_bot/
 
-RUN python -m pip install -r /bot/requirements.txt
+RUN python -m pip install -r /mytlg_bot/requirements.txt
 
 COPY . /mytlg_bot/
 
