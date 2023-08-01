@@ -2,7 +2,8 @@ import asyncio
 import os
 import shutil
 
-from pyrogram.errors import UserAlreadyParticipant, FloodWait, UserBannedInChannel, UserBlocked
+from pyrogram.errors import (UserAlreadyParticipant, FloodWait, UserBannedInChannel, UserBlocked, InviteHashExpired,
+                             InviteHashInvalid)
 from pyrogram.raw import functions
 
 from client_work import client_work
@@ -107,6 +108,16 @@ async def check_channel_async(app, channel_link):
 
         except UserBlocked as error:
             MY_LOGGER.warning(f'Пользователь заблокирован: {error}')
+            success = False
+            break
+
+        except InviteHashExpired as error:
+            MY_LOGGER.warning(f'Ссылка для подключения неактуальна: {error}')
+            success = False
+            break
+
+        except InviteHashInvalid as error:
+            MY_LOGGER.warning(f'Ссылка для подключения невалидна: {error}')
             success = False
             break
 
