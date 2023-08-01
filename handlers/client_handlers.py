@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import json
+import random
 
 from pyrogram import Client, filters
 from pyrogram.raw import functions
@@ -73,6 +74,9 @@ async def subscribe_to_channels(client, update):
         })
         if not check_ch_rslt.get('success'):
             task_result_dct['fully_completed'] = False
+        sleep_time = random.randint(15, 25)
+        MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
+        await asyncio.sleep(sleep_time)
 
     MY_LOGGER.debug(f'Отправляем в БД результаты подписки')
     send_rslt = await send_subscription_results(req_data=task_result_dct)

@@ -4,4 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - ${BOT_VOLUME_PATH}:/mytlg_bot/
+    env_file: # Указываем явно путь к файлу с переменными окружения
+      - .env
     restart: always
