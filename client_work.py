@@ -5,7 +5,7 @@ from pyrogram import Client
 from utils.req_to_bot_api import set_acc_run_flag
 
 
-async def client_work(session_name, workdir, proxy_str, acc_pk):
+async def client_work(session_name, workdir, acc_pk, proxy_str=None):
     """
     Такс в eventloop'e для одного клиента телеграм
     """
@@ -16,21 +16,24 @@ async def client_work(session_name, workdir, proxy_str, acc_pk):
         ]
     )
 
-    proxy_lst = proxy_str.split(':')
-    proxy_dct = {
-        'scheme': proxy_lst[0],
-        'hostname': proxy_lst[1],
-        'port': int(proxy_lst[2]),
-    }
-    if proxy_lst[3] != '' and proxy_lst[4] != '':
-        proxy_dct['username'] = proxy_lst[3]
-        proxy_dct['password'] = proxy_lst[4]
-
     uvloop.install()  # Это для ускорения работы бота
 
     MY_LOGGER.info(f'Запускаем клиент аккаунта {session_name!r}')
-    client = Client(session_name, plugins=plugins, workdir=workdir, proxy=proxy_dct)
+    client = Client(session_name, plugins=plugins, workdir=workdir)
     client.acc_pk = acc_pk
+
+    # Добавляем проксю, если она передана
+    if proxy_str:
+        proxy_lst = proxy_str.split(':')
+        proxy_dct = {
+            'scheme': proxy_lst[0],
+            'hostname': proxy_lst[1],
+            'port': int(proxy_lst[2]),
+        }
+        if proxy_lst[3] != '' and proxy_lst[4] != '':
+            proxy_dct['username'] = proxy_lst[3]
+            proxy_dct['password'] = proxy_lst[4]
+        client.proxy = proxy_dct
 
     MY_LOGGER.debug(f'WORKING_CLIENTS.get(acc_pk) == {WORKING_CLIENTS.get(acc_pk)}')
     try:

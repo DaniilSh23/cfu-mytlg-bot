@@ -17,9 +17,15 @@ async def start_client_handler(_, update):
     Хэндлер для старта нового потока с клиентом аккаунта телеграм.
     Бот отправляет сообщение в чат к акку, управляющему ботом и передаёт там путь к нужному файлу сессии
     """
-    MY_LOGGER.debug(f'Получен апдейт для старта клиента {update.text!r}')
-    MY_LOGGER.debug(f'Достаём нужные данные из апдейта и перемещаем в проект бота файл сессии')
-    _, session_path, acc_pk, proxy_str = update.text.split()
+    MY_LOGGER.debug(f'Получен апдейт для старта клиента {update.caption!r}')
+    MY_LOGGER.debug(f'Достаём нужные данные из апдейта и сохраняем для бота файл сессии')
+    split_caption = update.caption.split()
+
+    if len(split_caption) == 3:
+        _, acc_pk, file_name = split_caption
+        proxy_str = None
+    else:
+        _, acc_pk, file_name, proxy_str = split_caption
 
     if WORKING_CLIENTS.get(acc_pk):
         MY_LOGGER.warning(f'Клиент {acc_pk!r} уже запущен!')
@@ -31,14 +37,17 @@ async def start_client_handler(_, update):
     if not os.path.exists(os.path.join(BASE_DIR, 'session_files')):
         os.mkdir(os.path.join(BASE_DIR, 'session_files'))
 
+    MY_LOGGER.debug(f'Скачиваем файл сессии из телеграмма')
+    sess_file_path = await update.download(file_name=os.path.join(BASE_DIR, 'session_files', file_name))
+    MY_LOGGER.debug(f'Файл скачать и лежит в : {sess_file_path}')
+
     try:
-        session_name = os.path.split(session_path)[1].split('.')[0]
-        shutil.copy2(session_path, os.path.join(BASE_DIR, 'session_files'))
+        session_name = file_name.split('.')[0]
         workdir = os.path.join(BASE_DIR, 'session_files')
 
         # Получаем текущий eventloop, создаём task
         loop = asyncio.get_event_loop()
-        task = loop.create_task(client_work(session_name, workdir, proxy_str, acc_pk))
+        task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy_str=proxy_str))
 
         # Флаг остановки таска
         stop_flag = asyncio.Event()
@@ -67,14 +76,14 @@ async def stop_client_handler(client, update):
     """
     Хэндлер для остановки клиента по его имени сессии
     """
-    _, session_path, acc_pk, __ = update.text.split()
-    session_name = os.path.split(session_path)[1].split('.')[0]
+    _, acc_pk, file_name = update.caption.split()
+    session_name = file_name.split('.')[0]
     MY_LOGGER.debug(f'Получен апдейт по остановке клиента {session_name!r}')
 
     # Если клиент не был ранее запущен в боте
     if not WORKING_CLIENTS.get(acc_pk):
         # Удаляем файл сессии из проекта бота
-        session_file_path = os.path.join(BASE_DIR, 'session_files', f'{session_name}.session')
+        session_file_path = os.path.join(BASE_DIR, 'session_files', file_name)
         if os.path.exists(session_file_path):
             os.remove(session_file_path)
             MY_LOGGER.info(f'Файл сессии {session_file_path!r} из проекта бота удалён.')

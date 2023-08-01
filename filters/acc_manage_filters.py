@@ -9,8 +9,8 @@ async def func_start_client_filter(_, __, update: Message):
     Фильтрация апдейтов с командами боту стартовать клиент
     """
     if update.chat.id == int(BOT_MANAGER_ID):
-        if update.text:
-            return update.text.startswith('*&*&start_acc') and len(update.text.split()) == 4
+        if update.caption:
+            return update.caption.startswith('/start_acc') and len(update.caption.split()) >= 3
 
 
 async def func_stop_client_filter(_, __, update: Message):
@@ -18,8 +18,8 @@ async def func_stop_client_filter(_, __, update: Message):
     Фильтрация апдейтов с командами боту стартовать клиент
     """
     if update.chat.id == int(BOT_MANAGER_ID):
-        if update.text:
-            return update.text.startswith('*&*&stop_acc') and len(update.text.split()) == 4
+        if update.caption:
+            return update.caption.startswith('/stop_acc') and len(update.caption.split()) >= 3
 
 
 async def func_update_acc_channels_filter(_, __, update: Message):
