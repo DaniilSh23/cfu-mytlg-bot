@@ -81,6 +81,7 @@ async def check_channel_async(app, channel_link):
     ch_hash = channel_link.split('/')[-1]
     join_target = channel_link if ch_hash.startswith('+') else f"@{ch_hash}"
     error = None
+    channel_obj = None
     while True:
         try:
             await app.join_chat(join_target)
@@ -88,47 +89,54 @@ async def check_channel_async(app, channel_link):
             success = True
             break
 
-        except UserAlreadyParticipant as error:
-            MY_LOGGER.info(f'Получено исключение, что юзер уже участник канала: {error}. '
+        except UserAlreadyParticipant as err:
+            MY_LOGGER.info(f'Получено исключение, что юзер уже участник канала: {err}. '
                            f'Ждём 2 сек и берём инфу о чате')
+            error = err
             await asyncio.sleep(2)
             channel_obj = await app.get_chat(channel_link)
             success = True
             break
 
-        except FloodWait as error:
-            MY_LOGGER.info(f'Напоролся на флуд. Ждём {error.value} секунд')
-            await asyncio.sleep(int(error.value))
+        except FloodWait as err:
+            MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
+            error = err
+            await asyncio.sleep(int(err.value))
             MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
 
-        except UserBannedInChannel as error:
-            MY_LOGGER.warning(f'Пользователь забанен в канале: {error}')
+        except UserBannedInChannel as err:
+            MY_LOGGER.warning(f'Пользователь забанен в канале: {err}')
+            error = err
             success = False
             break
 
-        except UserBlocked as error:
-            MY_LOGGER.warning(f'Пользователь заблокирован: {error}')
+        except UserBlocked as err:
+            MY_LOGGER.warning(f'Пользователь заблокирован: {err}')
+            error = err
             success = False
             break
 
-        except InviteHashExpired as error:
-            MY_LOGGER.warning(f'Ссылка для подключения неактуальна: {error}')
+        except InviteHashExpired as err:
+            MY_LOGGER.warning(f'Ссылка для подключения неактуальна: {err}')
+            error = err
             success = False
             break
 
-        except InviteHashInvalid as error:
-            MY_LOGGER.warning(f'Ссылка для подключения невалидна: {error}')
+        except InviteHashInvalid as err:
+            MY_LOGGER.warning(f'Ссылка для подключения невалидна: {err}')
+            error = err
             success = False
             break
 
-        except Exception as error:
-            MY_LOGGER.warning(f'Ошибка при проверке канала: {error}')
+        except Exception as err:
+            MY_LOGGER.warning(f'Ошибка при проверке канала: {err}')
+            error = err
             success = False
             break
 
-    if success:
+    if channel_obj:
         return {
-            'success': True,
+            'success': success,
             'result': {
                 'ch_id': channel_obj.id,
                 'ch_name': channel_obj.title,
@@ -138,6 +146,6 @@ async def check_channel_async(app, channel_link):
         }
     else:
         return {
-            'success': False,
+            'success': success,
             'error': error
         }
