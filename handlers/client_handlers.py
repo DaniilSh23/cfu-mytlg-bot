@@ -64,16 +64,27 @@ async def subscribe_to_channels(client, update):
     task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), fully_completed=True, results=[])
     for i_ch_pk, i_ch_lnk in cmd_data_dct["data"]:
         check_ch_rslt = await check_channel_async(app=client, channel_link=i_ch_lnk)
+
+        # Подписка не удалась
+        if not check_ch_rslt.get('success'):
+            task_result_dct['fully_completed'] = False
+            task_result_dct.get('results').append({
+                'ch_pk': i_ch_pk,
+                'success': check_ch_rslt.get('success'),
+                'description': check_ch_rslt.get('result').get('description'),
+            })
+            continue
+
+        # Успешная подписка
         task_result_dct.get('results').append({
             'ch_pk': i_ch_pk,
             'success': check_ch_rslt.get('success'),
             'ch_id': check_ch_rslt.get('result').get('ch_id'),
             'ch_name': check_ch_rslt.get('result').get('ch_name'),
+            'ch_lnk': i_ch_lnk,
             'description': check_ch_rslt.get('result').get('description'),
             'subscribers_numb': check_ch_rslt.get('result').get('members_count')
         })
-        if not check_ch_rslt.get('success'):
-            task_result_dct['fully_completed'] = False
         sleep_time = random.randint(15, 25)
         MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
         await asyncio.sleep(sleep_time)
@@ -83,12 +94,13 @@ async def subscribe_to_channels(client, update):
     if send_rslt:
         MY_LOGGER.debug(f'Пополняем список каналов для данного аккаунта')
         for i_ch in task_result_dct.get('results'):
-            CLIENT_CHANNELS[client.acc_pk].append({
-                "pk": i_ch_pk,
-                "channel_id": i_ch.get('ch_id'),
-                "channel_name": i_ch.get('ch_name'),
-                "channel_link": i_ch_lnk,
-            })
+            if i_ch.get('success'):
+                CLIENT_CHANNELS[client.acc_pk].append({
+                    "pk": i_ch.get('ch_pk'),
+                    "channel_id": i_ch.get('ch_id'),
+                    "channel_name": i_ch.get('ch_name'),
+                    "channel_link": i_ch.get('ch_lnk'),
+                })
     await update.delete()   # удаляем сообщение с командой
 
 

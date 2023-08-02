@@ -147,5 +147,10 @@ async def check_channel_async(app, channel_link):
     else:
         return {
             'success': success,
-            'error': error
+            'result': {
+                'ch_id': 'undefined',
+                'ch_name': None,
+                'description': error,
+                'members_count': None,
+            },
         }
