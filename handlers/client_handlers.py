@@ -7,7 +7,7 @@ from pyrogram import Client, filters
 from pyrogram.raw import functions
 
 from filters.client_filters import listening_channel_filter
-from settings.config import MY_LOGGER, CLIENT_CHANNELS, TOKEN
+from settings.config import MY_LOGGER, CLIENT_CHANNELS, TOKEN, PAUSE_BETWEEN_JOIN_TO_CHANNELS
 from utils.post_filters import PostFilters
 from utils.req_to_bot_api import get_related_news, write_new_post, send_subscription_results
 from utils.work_with_clients import check_channel_async
@@ -85,7 +85,7 @@ async def subscribe_to_channels(client, update):
             'description': check_ch_rslt.get('result').get('description'),
             'subscribers_numb': check_ch_rslt.get('result').get('members_count')
         })
-        sleep_time = random.randint(15, 25)
+        sleep_time = random.randint(PAUSE_BETWEEN_JOIN_TO_CHANNELS[0], PAUSE_BETWEEN_JOIN_TO_CHANNELS[1])
         MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
         await asyncio.sleep(sleep_time)
 

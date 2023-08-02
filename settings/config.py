@@ -32,8 +32,6 @@ WRITE_INTERESTS_FORM = f'{BASE_HOST_URL}mytlg/write_interests/'
 # START_SETTINGS_FORM = f'https://yandex.ru'
 # WRITE_INTERESTS_FORM = f'https://yandex.ru'
 
-# Состояния
-STATES_DCT = dict()
 
 # Настройки логгера
 MY_LOGGER = loguru.logger
@@ -52,3 +50,8 @@ MY_LOGGER.add(  # системные логи в файл
 # Словари для хранения чего-либо
 WORKING_CLIENTS = dict()    # Словарь для запущенных клиентов
 CLIENT_CHANNELS = dict()    # Каналы для запущенных клиентов
+STATES_DCT = dict()     # Состояния бота
+
+# Разные константы
+PAUSE_BETWEEN_JOIN_TO_CHANNELS = (15, 25)
+
