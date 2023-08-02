@@ -3,7 +3,7 @@ import os
 import shutil
 
 from pyrogram.errors import (UserAlreadyParticipant, FloodWait, UserBannedInChannel, UserBlocked, InviteHashExpired,
-                             InviteHashInvalid)
+                             InviteHashInvalid, AuthKeyUnregistered)
 from pyrogram.raw import functions
 
 from client_work import client_work
@@ -92,7 +92,7 @@ async def check_channel_async(app, channel_link):
         except UserAlreadyParticipant as err:
             MY_LOGGER.info(f'Получено исключение, что юзер уже участник канала: {err}. '
                            f'Ждём 2 сек и берём инфу о чате')
-            error = err
+            error = err.MESSAGE
             await asyncio.sleep(2)
             channel_obj = await app.get_chat(channel_link)
             success = True
@@ -100,37 +100,43 @@ async def check_channel_async(app, channel_link):
 
         except FloodWait as err:
             MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
-            error = err
+            error = err.MESSAGE
             await asyncio.sleep(int(err.value))
             MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
 
         except UserBannedInChannel as err:
             MY_LOGGER.warning(f'Пользователь забанен в канале: {err}')
-            error = err
+            error = err.MESSAGE
             success = False
             break
 
         except UserBlocked as err:
             MY_LOGGER.warning(f'Пользователь заблокирован: {err}')
-            error = err
+            error = err.MESSAGE
             success = False
             break
 
         except InviteHashExpired as err:
             MY_LOGGER.warning(f'Ссылка для подключения неактуальна: {err}')
-            error = err
+            error = err.MESSAGE
             success = False
             break
 
         except InviteHashInvalid as err:
             MY_LOGGER.warning(f'Ссылка для подключения невалидна: {err}')
-            error = err
+            error = err.MESSAGE
+            success = False
+            break
+
+        except AuthKeyUnregistered as err:
+            MY_LOGGER.critical(f'Сессия слетела. ЭТО НАДО КАК-ТО ОБРАБАТЫВАТЬ: {err}')
+            error = err.MESSAGE
             success = False
             break
 
         except Exception as err:
             MY_LOGGER.warning(f'Ошибка при проверке канала: {err}')
-            error = err
+            error = f'Необрабатываемая ошибка: {err!r}'
             success = False
             break
 
