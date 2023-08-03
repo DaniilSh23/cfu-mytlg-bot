@@ -7,7 +7,7 @@ from pyrogram.errors import (UserAlreadyParticipant, FloodWait, UserBannedInChan
 from pyrogram.raw import functions
 
 from client_work import client_work
-from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNELS
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNELS, FLOOD_WAIT_LIMIT
 from utils.req_to_bot_api import get_channels
 
 
@@ -82,6 +82,7 @@ async def check_channel_async(app, channel_link):
     join_target = channel_link if ch_hash.startswith('+') else f"@{ch_hash}"
     error = None
     channel_obj = None
+    brake_ch = False
     while True:
         try:
             await app.join_chat(join_target)
@@ -99,6 +100,13 @@ async def check_channel_async(app, channel_link):
             break
 
         except FloodWait as err:
+            if int(err.value) > FLOOD_WAIT_LIMIT:
+                MY_LOGGER.warning(f'Получен слишком высокий флуд: {err.value} сек. Прерываем подписку на каналы')
+                error = (f'Получен слишком высокий флуд: {err.value} сек. Прерываем подписку на каналы. '
+                         f'Оригинальный текст ошибки: {err!r}')
+                success = False
+                brake_ch = True
+                break
             MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
             error = err.MESSAGE
             await asyncio.sleep(int(err.value))
@@ -143,6 +151,7 @@ async def check_channel_async(app, channel_link):
     if channel_obj:
         return {
             'success': success,
+            'brake_ch': brake_ch,
             'result': {
                 'ch_id': channel_obj.id,
                 'ch_name': channel_obj.title,
@@ -153,6 +162,7 @@ async def check_channel_async(app, channel_link):
     else:
         return {
             'success': success,
+            'break': brake_ch,
             'result': {
                 'ch_id': 'undefined',
                 'ch_name': None,

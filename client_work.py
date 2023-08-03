@@ -24,6 +24,7 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
 
     # Добавляем проксю, если она передана
     if proxy_str:
+        MY_LOGGER.debug(f'Подключаем аккаунт через проксю: {proxy_str!r}')
         proxy_lst = proxy_str.split(':')
         proxy_dct = {
             'scheme': proxy_lst[0],
@@ -39,7 +40,6 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
     try:
         MY_LOGGER.debug(f'Клиент {session_name!r} отправляет команду /start боту')
         async with client as client:
-            print(TOKEN.split(':')[0])
             send_start = await client.send_message(chat_id=BOT_USERNAME, text='/start')
             MY_LOGGER.debug(f'Результат отправки клиентом {session_name!r} команды /start боту: {send_start}')
 

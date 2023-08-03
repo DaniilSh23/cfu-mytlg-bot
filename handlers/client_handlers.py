@@ -62,7 +62,11 @@ async def subscribe_to_channels(client, update):
 
     # Словарь с результатами подписки
     task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), fully_completed=True, results=[])
+    total_ch = len(cmd_data_dct["data"])
+    ch_numb = 0
     for i_ch_pk, i_ch_lnk in cmd_data_dct["data"]:
+        ch_numb += 1
+        MY_LOGGER.debug(f'Подписываемся на {ch_numb} канал из {total_ch}')
         check_ch_rslt = await check_channel_async(app=client, channel_link=i_ch_lnk)
 
         # Подписка не удалась
@@ -73,6 +77,9 @@ async def subscribe_to_channels(client, update):
                 'success': check_ch_rslt.get('success'),
                 'description': check_ch_rslt.get('result').get('description'),
             })
+            if check_ch_rslt.get('break_ch'):
+                MY_LOGGER.warning(f'Останавливаем подписку на каналы аккаунтом PK == {client.acc_pk!r}')
+                break
             continue
 
         # Успешная подписка
@@ -89,10 +96,10 @@ async def subscribe_to_channels(client, update):
         MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
         await asyncio.sleep(sleep_time)
 
-    MY_LOGGER.debug(f'Отправляем в БД результаты подписки')
+    MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r}')
     send_rslt = await send_subscription_results(req_data=task_result_dct)
     if send_rslt:
-        MY_LOGGER.debug(f'Пополняем список каналов для данного аккаунта')
+        MY_LOGGER.debug(f'Пополняем список каналов для аккаунта PK == {client.acc_pk!r}')
         for i_ch in task_result_dct.get('results'):
             if i_ch.get('success'):
                 CLIENT_CHANNELS[client.acc_pk].append({

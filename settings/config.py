@@ -54,4 +54,5 @@ STATES_DCT = dict()     # Состояния бота
 
 # Разные константы
 PAUSE_BETWEEN_JOIN_TO_CHANNELS = (15, 25)
+FLOOD_WAIT_LIMIT = 5400
 
