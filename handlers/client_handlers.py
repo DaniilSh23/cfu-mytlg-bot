@@ -103,7 +103,7 @@ async def subscribe_to_channels(client, update):
             'description': check_ch_rslt.get('result').get('description'),
             'subscribers_numb': check_ch_rslt.get('result').get('members_count')
         })
-        sleep_time = random.randint(PAUSE_BETWEEN_JOIN_TO_CHANNELS[0], PAUSE_BETWEEN_JOIN_TO_CHANNELS[1])
+        sleep_time = random.randint(int(PAUSE_BETWEEN_JOIN_TO_CHANNELS[0]), int(PAUSE_BETWEEN_JOIN_TO_CHANNELS[1]))
         MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
         await asyncio.sleep(sleep_time)
 

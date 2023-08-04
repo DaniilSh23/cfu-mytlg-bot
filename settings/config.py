@@ -53,6 +53,6 @@ CLIENT_CHANNELS = dict()    # Каналы для запущенных клие�
 STATES_DCT = dict()     # Состояния бота
 
 # Разные константы
-PAUSE_BETWEEN_JOIN_TO_CHANNELS = (15, 25)
-FLOOD_WAIT_LIMIT = 5400
+PAUSE_BETWEEN_JOIN_TO_CHANNELS = tuple(os.environ.get("PAUSE_BETWEEN_JOIN_TO_CHANNELS").split())
+FLOOD_WAIT_LIMIT = os.environ.get("FLOOD_WAIT_LIMIT")
 
