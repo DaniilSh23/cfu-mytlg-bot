@@ -46,6 +46,10 @@ async def listening_chat_handler(client, update):
         except RateLimitError as err:
             MY_LOGGER.warning(f'Проблема с запросами к OpenAI, откидываем пост. Ошибка: {err.error}')
             return
+        except Exception as err:
+            MY_LOGGER.critical(f'Необрабатываемая проблема на этапе фильтрации поста и запросов к OpenAI. '
+                               f'Пост будет отброшен. Ошибка: {err}')
+            return
 
         if not all(filtration_rslt):
             MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
