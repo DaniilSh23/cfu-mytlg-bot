@@ -55,7 +55,8 @@ class PostFilters:
         text_chunks = self.old_posts.split(sep=self.separator)
 
         # Создадим индексную базу векторов по данному тексту (переведом текст в цифры, чтобы его понял комп)
-        embeddings = OpenAIEmbeddings()
+        MY_LOGGER.debug(f'Получаем объект эмбеддингов от OpenAI')
+        embeddings = OpenAIEmbeddings(max_retries=2)  # TODO: добавил кол-во попыток запросов к OpenAI
         index_db = FAISS.from_texts(text_chunks, embeddings)
 
         # Отбираем более релевантные куски базового текста (base_text), согласно запросу (query)

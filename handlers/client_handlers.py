@@ -3,6 +3,7 @@ import datetime
 import json
 import random
 
+from openai.error import RateLimitError
 from pyrogram import Client, filters
 from pyrogram.raw import functions
 
@@ -18,7 +19,7 @@ async def listening_chat_handler(client, update):
     """
     Ловим апдейты от чатов, которые прослушиваем.
     """
-    MY_LOGGER.info(f'Получен апдейт из прослушиваемого канала с ID == {update.chat.id}')
+    MY_LOGGER.info(f'Аккаунт PK=={client.acc_pk!r} | Получен апдейт из прослушиваемого канала с ID == {update.chat.id}')
 
     MY_LOGGER.debug(f'Ищем нужный канал в общем списке')
     channels = CLIENT_CHANNELS[client.acc_pk]
@@ -34,12 +35,18 @@ async def listening_chat_handler(client, update):
     post_is_unique = True
     if related_news.get('posts'):
         MY_LOGGER.debug(f'Вызываем фильтры')
-        post_filters_obj = PostFilters(
-            new_post=update.text,
-            old_posts=related_news.get('posts'),
-            separator=related_news.get('separator'),
-        )
-        filtration_rslt = await post_filters_obj.complete_filtering()
+
+        try:
+            post_filters_obj = PostFilters(
+                new_post=update.text,
+                old_posts=related_news.get('posts'),
+                separator=related_news.get('separator'),
+            )
+            filtration_rslt = await post_filters_obj.complete_filtering()
+        except RateLimitError as err:
+            MY_LOGGER.warning(f'Проблема с запросами к OpenAI, откидываем пост. Ошибка: {err.error}')
+            return
+
         if not all(filtration_rslt):
             MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
             post_is_unique = False
