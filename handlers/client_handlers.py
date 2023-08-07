@@ -32,15 +32,12 @@ async def listening_chat_handler(client, update):
         MY_LOGGER.warning(f'Новостной пост из канала PK=={this_channel.get("pk")} не был обработан')
         return
 
-    post_is_unique = True
-    if related_news.get('posts'):
+    if len(related_news) > 0:
         MY_LOGGER.debug(f'Вызываем фильтры')
-
         try:
             post_filters_obj = PostFilters(
                 new_post=update.text,
-                old_posts=related_news.get('posts'),
-                separator=related_news.get('separator'),
+                old_posts=[(i_post.get("text"), i_post.get("embedding").split()) for i_post in related_news],
             )
             filtration_rslt = await post_filters_obj.complete_filtering()
         except RateLimitError as err:
@@ -51,12 +48,15 @@ async def listening_chat_handler(client, update):
                                f'Пост будет отброшен. Ошибка: {err}')
             return
 
-        if not all(filtration_rslt):
+        if all(filtration_rslt):
+            MY_LOGGER.debug(f'Пост прошёл фильтры, отправляем его в БД.')
+            await write_new_post(
+                ch_pk=this_channel.get("pk"),
+                text=update.text,
+                # Тут через map преобразуем float в str и соединяем это всё дело через пробел
+                embedding=' '.join(list(map(lambda numb: str(numb), post_filters_obj.new_post_embedding))))
+        else:
             MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
-            post_is_unique = False
-
-    if post_is_unique:
-        await write_new_post(ch_pk=this_channel.get("pk"), text=update.text)
 
 
 @Client.on_message(filters.bot & filters.command('subscribe_to_channels') & filters.document)
@@ -119,7 +119,7 @@ async def subscribe_to_channels(client, update):
                     "channel_name": i_ch.get('ch_name'),
                     "channel_link": i_ch.get('ch_lnk'),
                 })
-    await update.delete()   # удаляем сообщение с командой
+    await update.delete()  # удаляем сообщение с командой
 
 
 # @Client.on_message()

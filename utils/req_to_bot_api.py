@@ -86,16 +86,18 @@ async def get_related_news(ch_pk: str) -> dict | None:
                 MY_LOGGER.warning(f'Неудачный GET запрос для получения новостей по теме канала PK == {ch_pk!r}')
 
 
-async def write_new_post(ch_pk, text):
+async def write_new_post(ch_pk, text, embedding):
     """
     POST запрос для записи в БД нового новостного поста.
     ch_pk - PK канала в котором вышел пост
     text - текст поста
+    embedding - векторное представление текста поста(передать строку с числами через пробел)
     """
     data = {
         'token': TOKEN,
         'ch_pk': ch_pk,
         'text': text,
+        'embedding': embedding,
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(url=GET_RELATED_NEWS, data=data) as response:

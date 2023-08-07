@@ -9,10 +9,10 @@ class PostFilters:
     """
     Класс с фильтрами постов
     """
-    def __init__(self, new_post, old_posts, separator):
+    def __init__(self, new_post, old_posts):
         self.new_post = new_post
+        self.new_post_embedding = None
         self.old_posts = old_posts
-        self.separator = separator
         self.filtration_result = []
         self.rel_old_post = None
 
@@ -34,7 +34,8 @@ class PostFilters:
         find_rslt = await self.find_similar_post()
         if not find_rslt:
             check_gpt_rslt = await self.check_duplicate_by_gpt()
-            MY_LOGGER.debug(f'Ответ GPT на поиск дублей: {check_gpt_rslt}')
+            MY_LOGGER.debug(f'Ответ GPT на поиск дублей: {check_gpt_rslt}|'
+                            f'да - посты одинаковые по смыслу, нет - разные')
             if check_gpt_rslt.lower() == 'да':
                 self.filtration_result.append(False)
             elif check_gpt_rslt.lower() == 'нет':
@@ -46,24 +47,22 @@ class PostFilters:
 
     async def find_similar_post(self) -> bool | None:
         """
-        Поиск похожего поста. Это необходимо для фильтрации дублирующих новостей
-        base_text - базовый текст, база знаний или иное, на чем модель должна базировать свой ответ
-        query - запрос пользователя, под который в base_text нужно найти более релевантные куски текста
-        separator - разделитель текста с новостями
+        Поиск похожего поста. Это необходимо для фильтрации дублирующих новостей.
+        Вернёт True, если релевантный кусок не найден и None, если релевантный кусок найден.
         """
-        # Разбиваем текст на чанки
-        text_chunks = self.old_posts.split(sep=self.separator)
-
-        # Создадим индексную базу векторов по данному тексту (переведом текст в цифры, чтобы его понял комп)
         MY_LOGGER.debug(f'Получаем объект эмбеддингов от OpenAI')
-        embeddings = OpenAIEmbeddings(max_retries=2)  # TODO: добавил кол-во попыток запросов к OpenAI
-        index_db = FAISS.from_texts(text_chunks, embeddings)
+        embeddings = OpenAIEmbeddings(max_retries=2)  # добавил кол-во попыток запросов к OpenAI
+        # Пилим эмбеддинги для нового поста
+        new_post_embedding = embeddings.embed_query(self.new_post)
+        # Делаем индексную базу из двух старых кусков текста
+        index_db = FAISS.from_embeddings(text_embeddings=self.old_posts, embedding=embeddings)
+        # Поиск релевантных кусков текста, имея на входе уже готовые векторы
+        relevant_piece = index_db.similarity_search_with_score_by_vector(embedding=new_post_embedding, k=1)[0]
 
-        # Отбираем более релевантные куски базового текста (base_text), согласно запросу (query)
-        relevant_piece = index_db.similarity_search_with_score(self.new_post, k=1)[0]  # Достаём релевантные куски
         if relevant_piece[1] > 0.3:
             MY_LOGGER.warning(f'Не найдено похожих новостных постов.')
             self.filtration_result.append(True)
+            self.new_post_embedding = new_post_embedding
             return True
         self.rel_old_post = relevant_piece[0].page_content
         MY_LOGGER.debug(f'Найден релевантный кусок: {self.rel_old_post}')
