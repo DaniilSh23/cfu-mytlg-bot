@@ -28,35 +28,51 @@ async def listening_chat_handler(client, update):
 
     MY_LOGGER.debug(f'Получаем все новостные посты для темы данного канала')
     related_news = await get_related_news(ch_pk=this_channel.get('pk'))
-    if not related_news:
-        MY_LOGGER.warning(f'Новостной пост из канала PK=={this_channel.get("pk")} не был обработан')
+
+    if related_news is None:
+        MY_LOGGER.warning(f'Новостной пост из канала PK=={this_channel.get("pk")} не был обработан.')
         return
 
-    if len(related_news) > 0:
+    # Проверка на наличие в постах эмбеддингов
+    posts_lst = []
+    for i_post in related_news:
+        if i_post.get('embedding'):
+            posts_lst.append(i_post)
+
+    if len(posts_lst) > 0:
         MY_LOGGER.debug(f'Вызываем фильтры')
         try:
             post_filters_obj = PostFilters(
                 new_post=update.text,
-                old_posts=[(i_post.get("text"), i_post.get("embedding").split()) for i_post in related_news],
+                old_posts=[(i_post.get("text"), i_post.get("embedding").split()) for i_post in posts_lst],
             )
             filtration_rslt = await post_filters_obj.complete_filtering()
         except RateLimitError as err:
             MY_LOGGER.warning(f'Проблема с запросами к OpenAI, откидываем пост. Ошибка: {err.error}')
             return
         except Exception as err:
-            MY_LOGGER.critical(f'Необрабатываемая проблема на этапе фильтрации поста и запросов к OpenAI. '
-                               f'Пост будет отброшен. Ошибка: {err}')
+            MY_LOGGER.error(f'Необрабатываемая проблема на этапе фильтрации поста и запросов к OpenAI. '
+                            f'Пост будет отброшен. Ошибка: {err}')
             return
-
         if all(filtration_rslt):
             MY_LOGGER.debug(f'Пост прошёл фильтры, отправляем его в БД.')
             await write_new_post(
                 ch_pk=this_channel.get("pk"),
                 text=update.text,
                 # Тут через map преобразуем float в str и соединяем это всё дело через пробел
-                embedding=' '.join(list(map(lambda numb: str(numb), post_filters_obj.new_post_embedding))))
+                embedding=' '.join(list(map(lambda numb: str(numb), post_filters_obj.new_post_embedding)))
+            )
         else:
             MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
+    else:
+        MY_LOGGER.debug(f'Нет постов для сравнения, сходимся на том, что новый пост уникален.')
+        new_post_embedding = await PostFilters.make_embedding(text=update.text)
+        await write_new_post(
+            ch_pk=this_channel.get("pk"),
+            text=update.text,
+            # Тут через map преобразуем float в str и соединяем это всё дело через пробел
+            embedding=' '.join(list(map(lambda numb: str(numb), new_post_embedding)))
+        )
 
 
 @Client.on_message(filters.bot & filters.command('subscribe_to_channels') & filters.document)

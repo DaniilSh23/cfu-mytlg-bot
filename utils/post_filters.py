@@ -17,8 +17,8 @@ class PostFilters:
         self.rel_old_post = None
 
     def __str__(self):
-        return f"new_post = {self.new_post}\nseparator = {self.separator}\n" \
-               f"filtration_result = {self.filtration_result}\nrel_old_post = {self.rel_old_post}"
+        return (f"new_post = {self.new_post}\nfiltration_result = {self.filtration_result}\n"
+                f"rel_old_post = {self.rel_old_post}")
 
     async def complete_filtering(self):
         """
@@ -34,7 +34,7 @@ class PostFilters:
         find_rslt = await self.find_similar_post()
         if not find_rslt:
             check_gpt_rslt = await self.check_duplicate_by_gpt()
-            MY_LOGGER.debug(f'Ответ GPT на поиск дублей: {check_gpt_rslt}|'
+            MY_LOGGER.debug(f'Ответ GPT на поиск дублей: {check_gpt_rslt!r} | '
                             f'да - посты одинаковые по смыслу, нет - разные')
             if check_gpt_rslt.lower() == 'да':
                 self.filtration_result.append(False)
@@ -52,17 +52,22 @@ class PostFilters:
         """
         MY_LOGGER.debug(f'Получаем объект эмбеддингов от OpenAI')
         embeddings = OpenAIEmbeddings(max_retries=2)  # добавил кол-во попыток запросов к OpenAI
+
         # Пилим эмбеддинги для нового поста
-        new_post_embedding = embeddings.embed_query(self.new_post)
-        # Делаем индексную базу из двух старых кусков текста
+        MY_LOGGER.debug(f'Пилим эмбеддинги для нового поста')
+        self.new_post_embedding = embeddings.embed_query(self.new_post)
+
+        # Делаем индексную базу из старых кусков текста
+        MY_LOGGER.debug(f'Делаем индексную базу из старых кусков текста')
         index_db = FAISS.from_embeddings(text_embeddings=self.old_posts, embedding=embeddings)
+
         # Поиск релевантных кусков текста, имея на входе уже готовые векторы
-        relevant_piece = index_db.similarity_search_with_score_by_vector(embedding=new_post_embedding, k=1)[0]
+        MY_LOGGER.debug(f'Поиск релевантных кусков текста из уже имеющихся векторов')
+        relevant_piece = index_db.similarity_search_with_score_by_vector(embedding=self.new_post_embedding, k=1)[0]
 
         if relevant_piece[1] > 0.3:
             MY_LOGGER.warning(f'Не найдено похожих новостных постов.')
             self.filtration_result.append(True)
-            self.new_post_embedding = new_post_embedding
             return True
         self.rel_old_post = relevant_piece[0].page_content
         MY_LOGGER.debug(f'Найден релевантный кусок: {self.rel_old_post}')
@@ -94,3 +99,13 @@ class PostFilters:
             return False
         answer = completion.choices[0].message.content
         return answer
+
+    @staticmethod
+    async def make_embedding(text):
+        """
+        Метод для создания эмбеддингов для текста
+        """
+        MY_LOGGER.debug(f'Вызван метод для создания эмбеддингов к тексту')
+        embeddings = OpenAIEmbeddings(max_retries=2)
+        text_embedding = embeddings.embed_query(text)
+        return text_embedding
