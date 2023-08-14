@@ -8,9 +8,10 @@ from pyrogram import Client, filters
 from pyrogram.raw import functions
 
 from filters.client_filters import listening_channel_filter
-from settings.config import MY_LOGGER, CLIENT_CHANNELS, TOKEN, PAUSE_BETWEEN_JOIN_TO_CHANNELS
+from settings.config import MY_LOGGER, CLIENT_CHANNELS, TOKEN, PAUSE_BETWEEN_JOIN_TO_CHANNELS, \
+    PAUSE_BETWEEN_FIVE_CHANNELS
 from utils.post_filters import PostFilters
-from utils.req_to_bot_api import get_related_news, write_new_post, send_subscription_results
+from utils.req_to_bot_api import get_related_news, write_new_post, send_subscription_results, update_channels
 from utils.work_with_clients import check_channel_async
 
 
@@ -119,9 +120,26 @@ async def subscribe_to_channels(client, update):
             'description': check_ch_rslt.get('result').get('description'),
             'subscribers_numb': check_ch_rslt.get('result').get('members_count')
         })
-        sleep_time = random.randint(int(PAUSE_BETWEEN_JOIN_TO_CHANNELS[0]), int(PAUSE_BETWEEN_JOIN_TO_CHANNELS[1]))
-        MY_LOGGER.debug(f'Пауза перед следующей подпиской {sleep_time} сек.')
+
+        # Пауза перед следующей подпиской
+        if ch_numb % 5 == 0:
+            sleep_time = random.randint(*PAUSE_BETWEEN_FIVE_CHANNELS)
+            MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
+                            f'Отправляем запрос на запись каналов, на которые уже подписались.')
+            complete_channels = {
+                "token": TOKEN,
+                "acc_pk": int(client.acc_pk),
+                "channels": [i_ch for i_ch in task_result_dct.get('results')[ch_numb - 5:] if i_ch.get("success")],
+            }
+            ch_update_rslt = await update_channels(req_data=complete_channels)
+            if not ch_update_rslt:
+                MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
+        else:
+            sleep_time = random.randint(*PAUSE_BETWEEN_JOIN_TO_CHANNELS)
+        MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | Пауза перед следующей подпиской {sleep_time} сек.')
         await asyncio.sleep(sleep_time)
+        MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
+                        f'Город засыпает, просыпается аккаунт для дальнейших подписок на каналы.')
 
     MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r}')
     send_rslt = await send_subscription_results(req_data=task_result_dct)

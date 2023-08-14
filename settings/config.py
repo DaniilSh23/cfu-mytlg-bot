@@ -24,6 +24,7 @@ GET_CHANNELS_URL = f'{BASE_HOST_URL}mytlg/get_channels/'
 GET_SETTINGS_URL = f'{BASE_HOST_URL}mytlg/get_settings/'
 GET_RELATED_NEWS = f'{BASE_HOST_URL}mytlg/related_news/'
 WRITE_SUBSCRIPTION_RSLT = f'{BASE_HOST_URL}mytlg/write_subs_rslt/'
+UPDATE_CHANNELS = f'{BASE_HOST_URL}mytlg/update_channels/'
 
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
@@ -53,6 +54,7 @@ CLIENT_CHANNELS = dict()    # Каналы для запущенных клие�
 STATES_DCT = dict()     # Состояния бота
 
 # Разные константы
-PAUSE_BETWEEN_JOIN_TO_CHANNELS = tuple(os.environ.get("PAUSE_BETWEEN_JOIN_TO_CHANNELS").split())
+PAUSE_BETWEEN_JOIN_TO_CHANNELS = tuple(map(lambda x: int(x), os.environ.get("PAUSE_BETWEEN_JOIN_TO_CHANNELS").split()))
+PAUSE_BETWEEN_FIVE_CHANNELS = tuple(map(lambda x: int(x), os.environ.get("PAUSE_BETWEEN_FIVE_CHANNELS").split()))
 FLOOD_WAIT_LIMIT = os.environ.get("FLOOD_WAIT_LIMIT")
 

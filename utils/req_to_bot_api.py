@@ -2,7 +2,7 @@ from typing import Tuple
 
 import aiohttp as aiohttp
 from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN, SET_ACC_RUN_FLAG_URL, GET_CHANNELS_URL, GET_SETTINGS_URL, \
-    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT
+    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS
 
 
 async def post_for_write_user(tlg_id: str, tlg_username: str):
@@ -120,4 +120,18 @@ async def send_subscription_results(req_data):
                 return True
             else:
                 MY_LOGGER.warning(f'Неудачный POST запрос для записи результатов подписки')
+                return False
+
+
+async def update_channels(req_data):
+    """
+    Записываем инфу о каналах в БД
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url=UPDATE_CHANNELS, json=req_data) as response:
+            if response.status == 200:
+                MY_LOGGER.success(f'Успешный POST запрос для обновления списка каналов')
+                return True
+            else:
+                MY_LOGGER.warning(f'Неудачный POST запрос для обновления списка каналов')
                 return False
