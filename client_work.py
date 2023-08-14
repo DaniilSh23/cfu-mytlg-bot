@@ -35,6 +35,7 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
             proxy_dct['username'] = proxy_lst[3]
             proxy_dct['password'] = proxy_lst[4]
         client.proxy = proxy_dct
+        client.ipv6 = True
 
     MY_LOGGER.debug(f'WORKING_CLIENTS.get(acc_pk) == {WORKING_CLIENTS.get(acc_pk)}')
     try:
