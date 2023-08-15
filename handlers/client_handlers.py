@@ -53,7 +53,7 @@ async def listening_chat_handler(client, update):
             return
         except Exception as err:
             MY_LOGGER.error(f'Необрабатываемая проблема на этапе фильтрации поста и запросов к OpenAI. '
-                            f'Пост будет отброшен. Ошибка: {err}')
+                            f'Пост будет отброшен. Ошибка: {err} | Текст поста: {update.text!r}')
             return
         if all(filtration_rslt):
             MY_LOGGER.debug(f'Пост прошёл фильтры, отправляем его в БД.')
