@@ -11,7 +11,7 @@ from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNEL
 from utils.req_to_bot_api import get_channels
 
 
-async def stop_client_async_task(acc_pk, session_name):
+async def stop_client_async_task(acc_pk, session_name=None):
     """
     Функция для остановки асинхронного таска для клиента
     """
@@ -25,11 +25,12 @@ async def stop_client_async_task(acc_pk, session_name):
     WORKING_CLIENTS.pop(acc_pk)
     MY_LOGGER.info(f'Клиент PK={acc_pk!r} успешно остановлен.')
 
-    # Удаляем файл сессии из проекта бота
-    session_file_path = os.path.join(BASE_DIR, 'session_files', f'{session_name}.session')
-    if os.path.exists(session_file_path):
-        os.remove(session_file_path)
-        MY_LOGGER.info(f'Файл сессии {session_file_path!r} из проекта бота удалён.')
+    if session_name:
+        # Удаляем файл сессии из проекта бота
+        session_file_path = os.path.join(BASE_DIR, 'session_files', f'{session_name}.session')
+        if os.path.exists(session_file_path):
+            os.remove(session_file_path)
+            MY_LOGGER.info(f'Файл сессии {session_file_path!r} из проекта бота удалён.')
 
 
 async def start_client_async_task(session_file, proxy, acc_pk):

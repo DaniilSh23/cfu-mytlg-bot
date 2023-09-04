@@ -25,6 +25,7 @@ GET_SETTINGS_URL = f'{BASE_HOST_URL}mytlg/get_settings/'
 GET_RELATED_NEWS = f'{BASE_HOST_URL}mytlg/related_news/'
 WRITE_SUBSCRIPTION_RSLT = f'{BASE_HOST_URL}mytlg/write_subs_rslt/'
 UPDATE_CHANNELS = f'{BASE_HOST_URL}mytlg/update_channels/'
+GET_ACTIVE_ACCOUNTS = f'{BASE_HOST_URL}mytlg/get_active_accounts/'
 
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
@@ -41,7 +42,7 @@ MY_LOGGER.add(sink=sys.stdout, level='DEBUG')   # Все логи от DEBUG и 
 MY_LOGGER.add(  # системные логи в файл
     sink=f'{BASE_DIR}/logs/sys_log.log',
     level='DEBUG',
-    rotation='10 MB',
+    rotation='2 MB',
     compression="zip",
     enqueue=True,
     backtrace=True,

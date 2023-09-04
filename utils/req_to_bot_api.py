@@ -2,7 +2,7 @@ from typing import Tuple
 
 import aiohttp as aiohttp
 from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN, SET_ACC_RUN_FLAG_URL, GET_CHANNELS_URL, GET_SETTINGS_URL, \
-    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS
+    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS, GET_ACTIVE_ACCOUNTS
 
 
 async def post_for_write_user(tlg_id: str, tlg_username: str):
@@ -134,4 +134,19 @@ async def update_channels(req_data):
                 return True
             else:
                 MY_LOGGER.warning(f'Неудачный POST запрос для обновления списка каналов')
+                return False
+
+
+async def get_active_accounts():
+    """
+    Запрашиваем запущенные аккаунты
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url=f"{GET_ACTIVE_ACCOUNTS}?token={TOKEN}") as response:
+            if response.status == 200:
+                MY_LOGGER.success(f"Успешный GET запрос для получения и запуска аккаунтов, кот-е должны быть активны")
+                return True
+            else:
+                MY_LOGGER.warning(f'Неудачный GET запрос для получения и запуска аккаунтов, кот-е должны быть активны.'
+                                  f'\nStatus == {response.status!r} | {response.text}')
                 return False
