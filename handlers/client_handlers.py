@@ -1,11 +1,9 @@
 import asyncio
-import datetime
 import json
 import random
 
 from openai.error import RateLimitError
 from pyrogram import Client, filters
-from pyrogram.raw import functions
 
 from filters.client_filters import listening_channel_filter
 from settings.config import MY_LOGGER, CLIENT_CHANNELS, TOKEN, PAUSE_BETWEEN_JOIN_TO_CHANNELS, \

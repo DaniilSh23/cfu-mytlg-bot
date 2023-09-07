@@ -1,8 +1,11 @@
-from settings.config import WORKING_CLIENTS, MY_LOGGER, TOKEN, BOT_USERNAME
+from pyrogram.errors import UserDeactivatedBan
+from pyrogram.connection.connection import Connection as pyro_connection
+
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME
 import uvloop
 from pyrogram import Client
 
-from utils.req_to_bot_api import set_acc_run_flag
+from utils.work_with_clients import stop_account_actions
 
 
 async def client_work(session_name, workdir, acc_pk, proxy_str=None):
@@ -47,20 +50,33 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
         await client.start()    # Стартуем клиент аккаунта
         stop_flag = WORKING_CLIENTS.get(acc_pk)[0]
         MY_LOGGER.success(f'Клиент {session_name!r} успешно запущен!')
+        WORKING_CLIENTS[acc_pk][2] = True   # Устанавливаем флаг успешного запуска аккаунта
         await stop_flag.wait()  # Ожидаем поднятия флага
 
         MY_LOGGER.warning(f'Стоп флаг был поднят. Останавливаем клиент {session_name!r}')
         await client.stop()  # Останавливаем клиент аккаунт
         return  # Выходим из функции
 
-    except Exception as error:
-        MY_LOGGER.error(f'CLIENT {session_name!r} CRASHED WITH SOME ERROR\n\t{error}')
-        await client.stop()
-        # Отправляем запрос о том, что аккаунт НЕ запущен
-        rslt = await set_acc_run_flag(acc_pk=acc_pk, is_run=False)
-        if not rslt:
-            MY_LOGGER.error(f'Не удалось установить флаг is_run в True для акка PK={acc_pk} через API запрос')
+    except UserDeactivatedBan as err:
+        MY_LOGGER.error(f'Аккаунт {client.acc_pk!r} получил бан. Текст ошибки: {err!r}')
+        WORKING_CLIENTS[acc_pk][2] = None
+        await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name, error_type='ban',
+                                   err_text=f'Аккаунт {acc_pk} был забанен.')
 
-    except (KeyboardInterrupt, SystemExit):
+    except ConnectionError:
+        print('CONNECTION ERRRRRR!')
+        return
+
+    except (KeyboardInterrupt, SystemExit) as err:
         MY_LOGGER.warning(f'CLIENT {session_name!r} STOPPED BY CTRL+C!')
+        WORKING_CLIENTS[acc_pk][2] = None
+        await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
         await client.stop()
+
+    except Exception as err:
+        MY_LOGGER.error(f'CLIENT {session_name!r} CRASHED WITH SOME ERROR\n\t{err}')
+        WORKING_CLIENTS[acc_pk][2] = None
+        await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
+        await client.stop()
+
+

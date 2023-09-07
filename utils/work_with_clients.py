@@ -4,11 +4,33 @@ import shutil
 
 from pyrogram.errors import (UserAlreadyParticipant, FloodWait, UserBannedInChannel, UserBlocked, InviteHashExpired,
                              InviteHashInvalid, AuthKeyUnregistered)
-from pyrogram.raw import functions
 
-from client_work import client_work
-from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNELS, FLOOD_WAIT_LIMIT
-from utils.req_to_bot_api import get_channels
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNELS, FLOOD_WAIT_LIMIT, TOKEN
+from utils.req_to_bot_api import get_channels, post_account_error, set_acc_run_flag
+
+
+async def stop_account_actions(err, acc_pk, session_name, error_type='other', err_text='some error...'):
+    """
+    Функция для выполнения действий при остановке аккаунта из-за ошибки
+    """
+    # Записываем данные об ошибке аккаунта
+    rslt = await post_account_error(req_data={
+        "token": TOKEN,
+        "error_type": error_type,
+        "error_description": f"{err_text} | {err!r}",
+        "account": int(acc_pk),
+    })
+    if not rslt:
+        MY_LOGGER.error(f'Не удалось записать в БД данные об ошибке акка PK={acc_pk} через API запрос')
+    # Отмечаем в БД, что аккаунт остановлен
+    rslt = await set_acc_run_flag(acc_pk=acc_pk, is_run=False)
+    if not rslt:
+        MY_LOGGER.error(f'Не удалось установить флаг is_run в True для акка PK={acc_pk} через API запрос')
+    # Удаляем файл сессии
+    session_file_path = os.path.join(BASE_DIR, 'session_files', f'{session_name}.session')
+    if os.path.exists(session_file_path):
+        os.remove(session_file_path)
+        MY_LOGGER.info(f'Файл сессии {session_file_path!r} из проекта бота удалён.')
 
 
 async def stop_client_async_task(acc_pk, session_name=None):
@@ -37,23 +59,25 @@ async def start_client_async_task(session_file, proxy, acc_pk):
     """
     Функция для старта асинхронного таска для клиента
     """
+    from client_work import client_work
+
     MY_LOGGER.info(f'Вызвана функция для запуска асинхронного таска клиента телеграм')
     session_name = os.path.split(session_file)[1].split('.')[0]
-    shutil.copy2(session_file, os.path.join(BASE_DIR, 'session_files'))
     workdir = os.path.join(BASE_DIR, 'session_files')
 
     # Получаем текущий eventloop, создаём task
     loop = asyncio.get_event_loop()
-    task = loop.create_task(client_work(session_name, workdir, proxy, acc_pk))
+    task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy))
 
-    # Флаг остановки таска
-    stop_flag = asyncio.Event()
+    stop_flag = asyncio.Event()   # Флаг остановки таска
+    is_running = False
 
     # Запись таска и флага в общий словарь (флаг пока опущен)
-    WORKING_CLIENTS[acc_pk] = [stop_flag, task]
-    MY_LOGGER.info(f'Функция для запуска асинхронного таска клиента телеграм ВЫПОЛНЕНА')
+    WORKING_CLIENTS[acc_pk] = [stop_flag, task, is_running]
 
+    MY_LOGGER.info(f'Функция для запуска асинхронного таска клиента телеграм (acc_pk=={acc_pk}) ВЫПОЛНЕНА')
 
+from pyrogram.connection.connection import Connection
 async def get_channels_for_acc(acc_pk):
     """
     Функция для запроса каналов для аккаунта и сохранения их в глобальный словарь.
@@ -171,3 +195,6 @@ async def check_channel_async(app, channel_link):
                 'members_count': None,
             },
         }
+
+
+

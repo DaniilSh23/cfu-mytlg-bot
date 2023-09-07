@@ -26,6 +26,7 @@ GET_RELATED_NEWS = f'{BASE_HOST_URL}mytlg/related_news/'
 WRITE_SUBSCRIPTION_RSLT = f'{BASE_HOST_URL}mytlg/write_subs_rslt/'
 UPDATE_CHANNELS = f'{BASE_HOST_URL}mytlg/update_channels/'
 GET_ACTIVE_ACCOUNTS = f'{BASE_HOST_URL}mytlg/get_active_accounts/'
+ACCOUNT_ERR_URL = f'{BASE_HOST_URL}mytlg/account_error/'
 
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'

@@ -2,7 +2,7 @@ from typing import Tuple
 
 import aiohttp as aiohttp
 from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN, SET_ACC_RUN_FLAG_URL, GET_CHANNELS_URL, GET_SETTINGS_URL, \
-    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS, GET_ACTIVE_ACCOUNTS
+    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS, GET_ACTIVE_ACCOUNTS, ACCOUNT_ERR_URL
 
 
 async def post_for_write_user(tlg_id: str, tlg_username: str):
@@ -149,4 +149,18 @@ async def get_active_accounts():
             else:
                 MY_LOGGER.warning(f'Неудачный GET запрос для получения и запуска аккаунтов, кот-е должны быть активны.'
                                   f'\nStatus == {response.status!r} | {response.text}')
+                return False
+
+
+async def post_account_error(req_data):
+    """
+    POST запрос для записи в БД ошибки аккаунта
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url=ACCOUNT_ERR_URL, json=req_data) as response:
+            if response.status == 200:
+                MY_LOGGER.success(f'Успешный POST запрос для записи ошибки аккаунта')
+                return True
+            else:
+                MY_LOGGER.warning(f'Неудачный POST запрос для записи ошибки аккаунта: {response.text}')
                 return False

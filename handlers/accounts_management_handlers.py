@@ -1,14 +1,12 @@
 import asyncio
 import os
-import shutil
 
 from pyrogram import Client, filters
 
-from client_work import client_work
 from filters.acc_manage_filters import start_client_filter, stop_client_filter
 from settings.config import MY_LOGGER, WORKING_CLIENTS, BASE_DIR
-from utils.req_to_bot_api import set_acc_run_flag
-from utils.work_with_clients import stop_client_async_task, get_channels_for_acc
+from utils.work_with_clients import stop_client_async_task, get_channels_for_acc, stop_account_actions, \
+    start_client_async_task
 
 
 @Client.on_message(filters.me & filters.private & start_client_filter)
@@ -17,6 +15,7 @@ async def start_client_handler(_, update):
     Хэндлер для старта нового потока с клиентом аккаунта телеграм.
     Бот отправляет сообщение в чат к акку, управляющему ботом и передаёт там путь к нужному файлу сессии
     """
+
     MY_LOGGER.debug(f'Получен апдейт для старта клиента {update.caption!r}')
     MY_LOGGER.debug(f'Достаём нужные данные из апдейта и сохраняем для бота файл сессии')
     split_caption = update.caption.split()
@@ -40,35 +39,44 @@ async def start_client_handler(_, update):
     MY_LOGGER.debug(f'Скачиваем файл сессии из телеграмма')
     sess_file_path = await update.download(file_name=os.path.join(BASE_DIR, 'session_files', file_name))
     MY_LOGGER.debug(f'Файл скачать и лежит в : {sess_file_path}')
+    session_name = file_name.split('.')[0]
 
-    try:
-        session_name = file_name.split('.')[0]
-        workdir = os.path.join(BASE_DIR, 'session_files')
-
-        # Получаем текущий eventloop, создаём task
-        loop = asyncio.get_event_loop()
-        task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy_str=proxy_str))
-
-        # Флаг остановки таска
-        stop_flag = asyncio.Event()
-
-        # Запись таска и флага в общий словарь (флаг пока опущен)
-        WORKING_CLIENTS[acc_pk] = [stop_flag, task]
-
-    except Exception:
-        # Отправляем запрос о том, что аккаунт НЕ запущен
-        rslt = await set_acc_run_flag(acc_pk=acc_pk, is_run=False)
-        if not rslt:
-            MY_LOGGER.error(f'Не удалось установить флаг is_run в False для акка PK={acc_pk} через API запрос')
-        return
+    # Вызываем функцию запуска аккаунта
+    await start_client_async_task(session_file=sess_file_path, proxy=proxy_str, acc_pk=acc_pk)
 
     # Запрашиваем список каналов
-    get_channels_rslt = await get_channels_for_acc(acc_pk=acc_pk)
-    if not get_channels_rslt:
-        await stop_client_async_task(acc_pk=acc_pk, session_name=session_name)
+    if WORKING_CLIENTS[acc_pk][2]:
+        get_channels_rslt = await get_channels_for_acc(acc_pk=acc_pk)
+        if not get_channels_rslt:
+            await stop_client_async_task(acc_pk=acc_pk, session_name=session_name)
+            await stop_account_actions(
+                err='Не удалось получить список каналов аккаунта',
+                acc_pk=acc_pk,
+                error_type='fail get channels',
+                session_name=session_name
+            )
 
     # Удаляем сообщение с командой бота
     await update.delete()
+
+    # TODO: эту блядню спустя время удалить, когда будет ясно, что нет проблем с запуском аккаунтов
+    #
+    # try:
+    #     workdir = os.path.join(BASE_DIR, 'session_files')
+    #
+    #     # Получаем текущий eventloop, создаём task
+    #     loop = asyncio.get_event_loop()
+    #     task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy_str=proxy_str))
+    #
+    #     # Флаг остановки таска
+    #     stop_flag = asyncio.Event()
+    #
+    #     # Запись таска и флага в общий словарь (флаг пока опущен)
+    #     WORKING_CLIENTS[acc_pk] = [stop_flag, task]
+    #
+    # except Exception as err:
+    #     await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
+    #     return
 
 
 @Client.on_message(filters.me & filters.private & stop_client_filter)
