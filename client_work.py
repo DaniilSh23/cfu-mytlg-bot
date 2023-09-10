@@ -1,10 +1,11 @@
-from pyrogram.errors import UserDeactivatedBan
+from pyrogram.errors import UserDeactivatedBan, FloodWait
 from pyrogram.connection.connection import Connection as pyro_connection
 
-from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME, FLOOD_WAIT_LIMIT
 import uvloop
 from pyrogram import Client
 
+from utils.req_to_bot_api import set_acc_flags
 from utils.work_with_clients import stop_account_actions
 
 
@@ -62,9 +63,10 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
         WORKING_CLIENTS[acc_pk][2] = None
         await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name, error_type='ban',
                                    err_text=f'Аккаунт {acc_pk} был забанен.')
+        await set_acc_flags(acc_pk=acc_pk, banned=True)
 
-    except ConnectionError:
-        print('CONNECTION ERRRRRR!')
+    except ConnectionError as err:
+        MY_LOGGER.error(f'CONNECTION ERRRRRR! {err}')
         return
 
     except (KeyboardInterrupt, SystemExit) as err:

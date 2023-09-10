@@ -1,12 +1,13 @@
 import asyncio
+import datetime
 import os
-import shutil
+import time
 
 from pyrogram.errors import (UserAlreadyParticipant, FloodWait, UserBannedInChannel, UserBlocked, InviteHashExpired,
                              InviteHashInvalid, AuthKeyUnregistered)
 
 from settings.config import WORKING_CLIENTS, MY_LOGGER, BASE_DIR, CLIENT_CHANNELS, FLOOD_WAIT_LIMIT, TOKEN
-from utils.req_to_bot_api import get_channels, post_account_error, set_acc_run_flag
+from utils.req_to_bot_api import get_channels, post_account_error, set_acc_flags
 
 
 async def stop_account_actions(err, acc_pk, session_name, error_type='other', err_text='some error...'):
@@ -23,7 +24,7 @@ async def stop_account_actions(err, acc_pk, session_name, error_type='other', er
     if not rslt:
         MY_LOGGER.error(f'Не удалось записать в БД данные об ошибке акка PK={acc_pk} через API запрос')
     # Отмечаем в БД, что аккаунт остановлен
-    rslt = await set_acc_run_flag(acc_pk=acc_pk, is_run=False)
+    rslt = await set_acc_flags(acc_pk=acc_pk, is_run=False)
     if not rslt:
         MY_LOGGER.error(f'Не удалось установить флаг is_run в True для акка PK={acc_pk} через API запрос')
     # Удаляем файл сессии
@@ -77,7 +78,7 @@ async def start_client_async_task(session_file, proxy, acc_pk):
 
     MY_LOGGER.info(f'Функция для запуска асинхронного таска клиента телеграм (acc_pk=={acc_pk}) ВЫПОЛНЕНА')
 
-from pyrogram.connection.connection import Connection
+
 async def get_channels_for_acc(acc_pk):
     """
     Функция для запроса каналов для аккаунта и сохранения их в глобальный словарь.
@@ -126,12 +127,27 @@ async def check_channel_async(app, channel_link):
 
         except FloodWait as err:
             if int(err.value) > FLOOD_WAIT_LIMIT:
-                MY_LOGGER.warning(f'Получен слишком высокий флуд: {err.value} сек. Прерываем подписку на каналы')
-                error = (f'Получен слишком высокий флуд: {err.value} сек. Прерываем подписку на каналы. '
+                MY_LOGGER.warning(f'Получен слишком высокий флуд: {err.value} сек.')
+                error = (f'Получен слишком высокий флуд: {err.value} сек.'
                          f'Оригинальный текст ошибки: {err!r}')
                 success = False
                 brake_ch = True
-                break
+                # Записываем данные об ошибке аккаунта
+                await post_account_error(req_data={
+                    "token": TOKEN,
+                    "error_type": "flood_wait",
+                    "error_description": f"Длительный флуд, acc_pk == {app.acc_pk}! {err.value} сек. "
+                                         f"(лимит флуда {FLOOD_WAIT_LIMIT} сек.). "
+                                         f"Получен {datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')}, "
+                                         f"окончание {datetime.datetime.fromtimestamp(time.time() + int(err.value)).strftime('%H:%M:%S %d.%m.%Y')}"
+                                         f"| {err!r}",
+                    "account": int(app.acc_pk),
+                })
+                await set_acc_flags(acc_pk=app.acc_pk, waiting=True)
+                await asyncio.sleep(int(err.value))
+                await set_acc_flags(acc_pk=app.acc_pk, waiting=False)
+                MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
+
             MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
             error = err.MESSAGE
             await asyncio.sleep(int(err.value))
@@ -162,15 +178,29 @@ async def check_channel_async(app, channel_link):
             break
 
         except AuthKeyUnregistered as err:
-            MY_LOGGER.critical(f'Сессия слетела. ЭТО НАДО КАК-ТО ОБРАБАТЫВАТЬ: {err}')
+            MY_LOGGER.critical(f'Сессия слетела. acc_pk=={app.acc_pk} ЭТО НАДО КАК-ТО ОБРАБАТЫВАТЬ: {err}')
             error = err.MESSAGE
             success = False
+            # Записываем данные об ошибке аккаунта
+            await post_account_error(req_data={
+                "token": TOKEN,
+                "error_type": "СЛЕТЕЛА_СЕССИЯ",
+                "error_description": f"Для аккаунта {app.acc_pk} слетела сессия! | {err!r}",
+                "account": int(app.acc_pk),
+            })
             break
 
         except Exception as err:
             MY_LOGGER.warning(f'Ошибка при проверке канала: {err}')
             error = f'Необрабатываемая ошибка: {err!r}'
             success = False
+            # Записываем данные об ошибке аккаунта
+            await post_account_error(req_data={
+                "token": TOKEN,
+                "error_type": "необрабатываемая_ошибка",
+                "error_description": f"Необрабатываемая ошибка для аккаунта {app.acc_pk} | {err!r}",
+                "account": int(app.acc_pk),
+            })
             break
 
     if channel_obj:
@@ -197,4 +227,24 @@ async def check_channel_async(app, channel_link):
         }
 
 
+""" НИЖЕ ДЛЯ ТЕСТА """
 
+
+def exc_test():
+    for i in range(10):
+        try:
+            if i == 5:
+                10 / 0
+            print(f'выполняем итерацию {i!r}')
+            raise
+        except ZeroDivisionError as err:
+            print(f'Обрабатываем ошибку итерации {i!r} {err}')
+            break
+        except Exception as err:
+            print(f'Обрабатываем ошибку итерации {i!r} {err}')
+        finally:
+            print(f'Вызван блок finally для итерации {i!r}')
+
+
+if __name__ == '__main__':
+    exc_test()

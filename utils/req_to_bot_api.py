@@ -1,8 +1,8 @@
 from typing import Tuple
 
 import aiohttp as aiohttp
-from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN, SET_ACC_RUN_FLAG_URL, GET_CHANNELS_URL, GET_SETTINGS_URL, \
-    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS, GET_ACTIVE_ACCOUNTS, ACCOUNT_ERR_URL
+from settings.config import MY_LOGGER, WRITE_USR_URL, TOKEN, GET_CHANNELS_URL, GET_SETTINGS_URL, \
+    GET_RELATED_NEWS, WRITE_SUBSCRIPTION_RSLT, UPDATE_CHANNELS, GET_ACTIVE_ACCOUNTS, ACCOUNT_ERR_URL, SET_ACC_FLAGS_URL
 
 
 async def post_for_write_user(tlg_id: str, tlg_username: str):
@@ -37,24 +37,28 @@ async def get_channels(acc_pk):
                 MY_LOGGER.warning(f'Неудачный запрос для получения списка каналов для прослушки. {response.status}')
 
 
-async def set_acc_run_flag(acc_pk, is_run):
+async def set_acc_flags(acc_pk, is_run=None, waiting=None, banned=None):
     """
     POST запрос для установки флага is_run для аккаунта
         acc_pk - первичный ключ БД аккаунта
         is_run - флаг запуска акка
+        waiting - флаг ожидания (флуд)
+        banned - флаг бана
     """
     data = {
         'token': TOKEN,
         'acc_pk': acc_pk,
         'is_run': is_run,
+        'waiting': waiting,
+        'banned': banned,
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(url=SET_ACC_RUN_FLAG_URL, data=data) as response:
+        async with session.post(url=SET_ACC_FLAGS_URL, data=data) as response:
             if response.status == 200:
-                MY_LOGGER.success(f'Успешный POST запрос для установки флага аккаунта is_run')
+                MY_LOGGER.success(f'Успешный POST запрос для установки флагов аккаунта PK=={acc_pk!r}')
                 return True
             else:
-                MY_LOGGER.warning(f'Неудачный запрос для установки флага аккаунта is_run {response.status}')
+                MY_LOGGER.warning(f'Неудачный запрос для установки флагов аккаунта PK=={acc_pk!r}')
                 return False
 
 

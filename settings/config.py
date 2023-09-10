@@ -20,6 +20,7 @@ BASE_DIR = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 BASE_HOST_URL = os.environ.get('BASE_HOST_URL', 'http://127.0.0.1:8000/')
 WRITE_USR_URL = f'{BASE_HOST_URL}mytlg/write_usr/'
 SET_ACC_RUN_FLAG_URL = f'{BASE_HOST_URL}mytlg/set_acc_run_flag/'
+SET_ACC_FLAGS_URL = f'{BASE_HOST_URL}mytlg/set_acc_flags/'
 GET_CHANNELS_URL = f'{BASE_HOST_URL}mytlg/get_channels/'
 GET_SETTINGS_URL = f'{BASE_HOST_URL}mytlg/get_settings/'
 GET_RELATED_NEWS = f'{BASE_HOST_URL}mytlg/related_news/'
