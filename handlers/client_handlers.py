@@ -75,7 +75,7 @@ async def listening_chat_handler(client, update):
 
 
 @Client.on_message(filters.bot & filters.command('subscribe_to_channels') & filters.document)
-async def subscribe_to_channels(client, update):
+async def subscribe_to_channels(client, update):    # TODO: эта дрочь переписана, но не проверена
     """
     Хэндлер на команду от бота начать подписываться на каналы.
     """
@@ -87,9 +87,12 @@ async def subscribe_to_channels(client, update):
     cmd_data_dct = json.loads(file_data)
 
     # Словарь с результатами подписки
-    task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), fully_completed=True, results=[])
+    task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), results=[])
     total_ch = len(cmd_data_dct["data"])
     ch_numb = 0
+    actions_story = ''
+    success_subs = 0
+    fail_subs = 0
     for i_ch_pk, i_ch_lnk in cmd_data_dct["data"]:
         ch_numb += 1
         MY_LOGGER.debug(f'Подписываемся на {ch_numb} канал из {total_ch}')
@@ -97,7 +100,9 @@ async def subscribe_to_channels(client, update):
 
         # Подписка не удалась
         if not check_ch_rslt.get('success'):
-            task_result_dct['fully_completed'] = False
+
+            fail_subs += 1
+            actions_story = f'{check_ch_rslt.get("action_story")}\n{actions_story}'
             task_result_dct.get('results').append({
                 'ch_pk': i_ch_pk,
                 'success': check_ch_rslt.get('success'),
@@ -109,6 +114,8 @@ async def subscribe_to_channels(client, update):
             continue
 
         # Успешная подписка
+        success_subs += 1
+        actions_story = f'{check_ch_rslt.get("action_story")}\n{actions_story}'
         task_result_dct.get('results').append({
             'ch_pk': i_ch_pk,
             'success': check_ch_rslt.get('success'),
@@ -132,6 +139,23 @@ async def subscribe_to_channels(client, update):
             ch_update_rslt = await update_channels(req_data=complete_channels)
             if not ch_update_rslt:
                 MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
+
+            # Отправляем счётчики подписок, историю действий и очищаем эти переменные
+            rslt = await send_subscription_results(
+                task_pk=int(cmd_data_dct.get("task_pk")),
+                actions_story=actions_story,
+                success_subs=success_subs,
+                fail_subs=fail_subs,
+            )
+            if not rslt:
+                MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | '
+                                  f'Не удался запрос для записи счетчиков и истории подписок. '
+                                  f'Их значения до очистки:\n\tactions_story == {actions_story!r}'
+                                  f'\n\tsuccess_subs == {success_subs!r}\n\tfail_subs == {fail_subs!r}')
+            actions_story = ''
+            success_subs = 0
+            fail_subs = 0
+
         else:
             sleep_time = random.randint(*PAUSE_BETWEEN_JOIN_TO_CHANNELS)
         MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | Пауза перед следующей подпиской {sleep_time} сек.')
@@ -139,8 +163,15 @@ async def subscribe_to_channels(client, update):
         MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
                         f'Город засыпает, просыпается аккаунт для дальнейших подписок на каналы.')
 
-    MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r}')
-    send_rslt = await send_subscription_results(req_data=task_result_dct)
+    MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r} с флагом завершения!')
+    send_rslt = await send_subscription_results(
+                task_pk=int(cmd_data_dct.get("task_pk")),
+                actions_story=actions_story,
+                success_subs=success_subs,
+                fail_subs=fail_subs,
+                end_flag=True,
+            )
+
     if send_rslt:
         MY_LOGGER.debug(f'Пополняем список каналов для аккаунта PK == {client.acc_pk!r}')
         for i_ch in task_result_dct.get('results'):
