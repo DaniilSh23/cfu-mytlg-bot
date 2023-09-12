@@ -114,20 +114,23 @@ async def write_new_post(ch_pk, text, embedding):
 
 
 async def send_subscription_results(task_pk: int, actions_story: str, success_subs: int, fail_subs: int,
-                                    end_flag: bool = False): # TODO: эта дрочь переписана, но не проверена
+                                    status: str = 'at_work', end_flag: bool = False): # TODO: эта дрочь переписана, но не проверена
     """
     POST запрос для записи результатов подписки в БД.
     :param task_pk - PK задачи на подписку
     :param actions_story - история действия
     :param success_subs - успешная подписка
     :param fail_subs - неудачная подписка
+    :param status - статус задачи на подписку, возможные значения: success, at_work, error
     :param end_flag - флаг окончания задачи
     """
     req_data = {
+        'token': TOKEN,
         'task_pk': task_pk,
         'actions_story': actions_story,
         'success_subs': success_subs,
         'fail_subs': fail_subs,
+        'status': status,
         'end_flag': end_flag,
     }
     async with aiohttp.ClientSession() as session:
