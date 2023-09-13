@@ -98,7 +98,7 @@ async def get_channels_for_acc(acc_pk):
     return True
 
 
-async def check_channel_async(app, channel_link):
+async def check_channel_async(app, channel_link):   # TODO: эта дрочь переписана, но не проверена
     """
     Функция для проверки канала (вступление в него и/или получение данных о нём)
     """
@@ -109,11 +109,15 @@ async def check_channel_async(app, channel_link):
     error = None
     channel_obj = None
     brake_ch = False
+    action_for_story = ''
     while True:
         try:
             await app.join_chat(join_target)
             channel_obj = await app.get_chat(join_target)
             success = True
+            action_for_story = (f'{datetime.datetime.now()} | '
+                                f'Успешная подписка на канал: {channel_obj.title}\n'
+                                f'{action_for_story}')
             break
 
         except UserAlreadyParticipant as err:
@@ -123,6 +127,9 @@ async def check_channel_async(app, channel_link):
             await asyncio.sleep(2)
             channel_obj = await app.get_chat(channel_link)
             success = True
+            action_for_story = (f'{datetime.datetime.now()} | '
+                                f'Юзер был подписан и мы просто достали инфу о канале {channel_obj.title}\n'
+                                f'{action_for_story}')
             break
 
         except FloodWait as err:
@@ -147,34 +154,41 @@ async def check_channel_async(app, channel_link):
                 await asyncio.sleep(int(err.value))
                 await set_acc_flags(acc_pk=app.acc_pk, waiting=False)
                 MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
+                action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
+                continue
 
             MY_LOGGER.info(f'Напоролся на флуд. Ждём {err.value} секунд')
             error = err.MESSAGE
             await asyncio.sleep(int(err.value))
             MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
 
         except UserBannedInChannel as err:
             MY_LOGGER.warning(f'Пользователь забанен в канале: {err}')
             error = err.MESSAGE
             success = False
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
         except UserBlocked as err:
             MY_LOGGER.warning(f'Пользователь заблокирован: {err}')
             error = err.MESSAGE
             success = False
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
         except InviteHashExpired as err:
             MY_LOGGER.warning(f'Ссылка для подключения неактуальна: {err}')
             error = err.MESSAGE
             success = False
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
         except InviteHashInvalid as err:
             MY_LOGGER.warning(f'Ссылка для подключения невалидна: {err}')
             error = err.MESSAGE
             success = False
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
         except AuthKeyUnregistered as err:
@@ -188,6 +202,7 @@ async def check_channel_async(app, channel_link):
                 "error_description": f"Для аккаунта {app.acc_pk} слетела сессия! | {err!r}",
                 "account": int(app.acc_pk),
             })
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
         except Exception as err:
@@ -201,6 +216,7 @@ async def check_channel_async(app, channel_link):
                 "error_description": f"Необрабатываемая ошибка для аккаунта {app.acc_pk} | {err!r}",
                 "account": int(app.acc_pk),
             })
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
     if channel_obj:
@@ -212,7 +228,8 @@ async def check_channel_async(app, channel_link):
                 'ch_name': channel_obj.title,
                 'description': channel_obj.description if channel_obj.description else '',
                 'members_count': channel_obj.members_count,
-            }
+            },
+            "action_story": action_for_story,
         }
     else:
         return {
@@ -224,6 +241,7 @@ async def check_channel_async(app, channel_link):
                 'description': error,
                 'members_count': None,
             },
+            "action_story": action_for_story,
         }
 
 
