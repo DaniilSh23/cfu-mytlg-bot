@@ -1,7 +1,7 @@
 from pyrogram.errors import UserDeactivatedBan, FloodWait
 from pyrogram.connection.connection import Connection as pyro_connection
 
-from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME, FLOOD_WAIT_LIMIT
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME, FLOOD_WAIT_LIMIT, CLIENT_CHANNELS
 import uvloop
 from pyrogram import Client
 
@@ -41,7 +41,10 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
         client.proxy = proxy_dct
         client.ipv6 = True
 
-    MY_LOGGER.debug(f'WORKING_CLIENTS.get(acc_pk) == {WORKING_CLIENTS.get(acc_pk)}')
+    # Создаём в словаре каналов ключ для данного аккаунта, если такового ещё нет
+    if not CLIENT_CHANNELS.get(client.acc_pk):
+        CLIENT_CHANNELS[client.acc_pk] = []
+
     try:
         MY_LOGGER.debug(f'Клиент {session_name!r} отправляет команду /start боту')
         async with client as client:

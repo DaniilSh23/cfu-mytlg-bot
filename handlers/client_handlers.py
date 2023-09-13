@@ -179,8 +179,6 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
         MY_LOGGER.debug(f'Пополняем список каналов для аккаунта PK == {client.acc_pk!r}')
         for i_ch in task_result_dct.get('results'):
             if i_ch.get('success'):
-                if not CLIENT_CHANNELS.get(client.acc_pk):
-                    CLIENT_CHANNELS[client.acc_pk] = []
                 CLIENT_CHANNELS[client.acc_pk].append({
                     "pk": i_ch.get('ch_pk'),
                     "channel_id": i_ch.get('ch_id'),
