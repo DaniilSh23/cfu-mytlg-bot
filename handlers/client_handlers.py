@@ -87,12 +87,18 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
     cmd_data_dct = json.loads(file_data)
 
     # Словарь с результатами подписки
-    task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), results=[])
+    task_result_dct = dict(token=TOKEN, task_pk=cmd_data_dct.get("task_pk"), results=[])    # TODO: эту херню скорее всего надо будет убрать из кода
     total_ch = len(cmd_data_dct["data"])
     ch_numb = 0
     actions_story = ''
     success_subs = 0
     fail_subs = 0
+    complete_channels = {
+        "token": TOKEN,
+        "acc_pk": int(client.acc_pk),
+        "channels": [],
+    }
+
     for i_ch_pk, i_ch_lnk in cmd_data_dct["data"]:
         ch_numb += 1
         MY_LOGGER.debug(f'Подписываемся на {ch_numb} канал из {total_ch}')
@@ -115,7 +121,7 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
         # Успешная подписка
         success_subs += 1
         actions_story = f'{check_ch_rslt.get("action_story")}\n{actions_story}'
-        task_result_dct.get('results').append({
+        i_ch_dct = {
             'ch_pk': i_ch_pk,
             'success': check_ch_rslt.get('success'),
             'ch_id': check_ch_rslt.get('result').get('ch_id'),
@@ -123,38 +129,42 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
             'ch_lnk': i_ch_lnk,
             'description': check_ch_rslt.get('result').get('description'),
             'subscribers_numb': check_ch_rslt.get('result').get('members_count')
-        })
+        }
+        task_result_dct.get('results').append(i_ch_dct)
+        complete_channels['channels'].append(i_ch_dct)
 
         # Пауза перед следующей подпиской
-        if ch_numb % 5 == 0:
+        if ch_numb % 5 == 0 and ch_numb < total_ch:
             sleep_time = random.randint(*PAUSE_BETWEEN_FIVE_CHANNELS)
             MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
                             f'Отправляем запрос на запись каналов, на которые уже подписались.')
-            complete_channels = {
-                "token": TOKEN,
-                "acc_pk": int(client.acc_pk),
-                "channels": [i_ch for i_ch in task_result_dct.get('results')[ch_numb - 5:] if i_ch.get("success")],
-            }
+
+            # complete_channels = {     # TODO: потом убрать, как будет ясно, что всё ок
+            #     "token": TOKEN,
+            #     "acc_pk": int(client.acc_pk),
+            #     "channels": [i_ch for i_ch in task_result_dct.get('results')[ch_numb - 5:] if i_ch.get("success")],
+            # }
+
             ch_update_rslt = await update_channels(req_data=complete_channels)
             if not ch_update_rslt:
                 MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
+            complete_channels['channels'] = []
 
             # Отправляем счётчики подписок, историю действий и очищаем эти переменные
-            if ch_numb < total_ch:
-                rslt = await send_subscription_results(
-                    task_pk=int(cmd_data_dct.get("task_pk")),
-                    actions_story=actions_story,
-                    success_subs=success_subs,
-                    fail_subs=fail_subs,
-                )
-                if not rslt:
-                    MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | '
-                                      f'Не удался запрос для записи счетчиков и истории подписок. '
-                                      f'Их значения до очистки:\n\tactions_story == {actions_story!r}'
-                                      f'\n\tsuccess_subs == {success_subs!r}\n\tfail_subs == {fail_subs!r}')
-                actions_story = ''
-                success_subs = 0
-                fail_subs = 0
+            rslt = await send_subscription_results(
+                task_pk=int(cmd_data_dct.get("task_pk")),
+                actions_story=actions_story,
+                success_subs=success_subs,
+                fail_subs=fail_subs,
+            )
+            if not rslt:
+                MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | '
+                                  f'Не удался запрос для записи счетчиков и истории подписок. '
+                                  f'Их значения до очистки:\n\tactions_story == {actions_story!r}'
+                                  f'\n\tsuccess_subs == {success_subs!r}\n\tfail_subs == {fail_subs!r}')
+            actions_story = ''
+            success_subs = 0
+            fail_subs = 0
 
         else:
             sleep_time = random.randint(*PAUSE_BETWEEN_JOIN_TO_CHANNELS)
@@ -165,6 +175,7 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
             MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
                             f'Город засыпает, просыпается аккаунт для дальнейших подписок на каналы.')
 
+    # Блок ниже выполняется по окончании итерации по каналам
     MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r} с флагом завершения!')
     send_rslt = await send_subscription_results(
                 task_pk=int(cmd_data_dct.get("task_pk")),
@@ -185,6 +196,11 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
                     "channel_name": i_ch.get('ch_name'),
                     "channel_link": i_ch.get('ch_lnk'),
                 })
+
+    ch_update_rslt = await update_channels(req_data=complete_channels)
+    if not ch_update_rslt:
+        MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
+
     await update.delete()  # удаляем сообщение с командой
 
 
