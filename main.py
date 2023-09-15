@@ -1,11 +1,12 @@
 import asyncio
 import os
 import random
+import sentry_sdk
 
 import uvloop
 from pyrogram import Client, idle
 
-from settings.config import WORKING_CLIENTS, BASE_DIR, MY_LOGGER
+from settings.config import WORKING_CLIENTS, BASE_DIR, MY_LOGGER, SENTRY_DSN
 from utils.req_to_bot_api import get_active_accounts
 
 
@@ -38,6 +39,19 @@ async def main(bot_plugins):
 
 
 if __name__ == '__main__':
+    # Инициализируем отслеживание ошибок через sentry
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
+
     try:
         MY_LOGGER.info('BOT IS READY TO LAUNCH!\nstarting the countdown...')
         MY_LOGGER.info('3... SET PATH TO HANDLERS')

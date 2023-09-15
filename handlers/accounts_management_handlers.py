@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from pyrogram import Client, filters
@@ -40,11 +41,30 @@ async def start_client_handler(_, update):
     MY_LOGGER.debug(f'Файл скачать и лежит в : {sess_file_path}')
     session_name = file_name.split('.')[0]
 
-    # Вызываем функцию запуска аккаунта
-    await start_client_async_task(session_file=sess_file_path, proxy=proxy_str, acc_pk=acc_pk)
+    # # Вызываем функцию запуска аккаунта
+    # await start_client_async_task(session_file=sess_file_path, proxy=proxy_str, acc_pk=acc_pk)
+
+    try:
+        from client_work import client_work
+
+        workdir = os.path.join(BASE_DIR, 'session_files')
+
+        # Получаем текущий eventloop, создаём task
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy_str=proxy_str))
+
+        # Флаг остановки таска
+        stop_flag = asyncio.Event()
+
+        # Запись таска, флага остановки и флага запуска в общий словарь (флаги пока опущены)
+        WORKING_CLIENTS[acc_pk] = [stop_flag, task, False]
+
+    except Exception as err:
+        await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
+        return
 
     # Запрашиваем список каналов
-    if WORKING_CLIENTS[acc_pk][2]:
+    if WORKING_CLIENTS[acc_pk]:
         get_channels_rslt = await get_channels_for_acc(acc_pk=acc_pk)
         if not get_channels_rslt:
             await stop_client_async_task(acc_pk=acc_pk, session_name=session_name)
@@ -57,25 +77,6 @@ async def start_client_handler(_, update):
 
     # Удаляем сообщение с командой бота
     await update.delete()
-
-    # TODO: эту блядню спустя время удалить, когда будет ясно, что нет проблем с запуском аккаунтов
-    #
-    # try:
-    #     workdir = os.path.join(BASE_DIR, 'session_files')
-    #
-    #     # Получаем текущий eventloop, создаём task
-    #     loop = asyncio.get_event_loop()
-    #     task = loop.create_task(client_work(session_name, workdir, acc_pk, proxy_str=proxy_str))
-    #
-    #     # Флаг остановки таска
-    #     stop_flag = asyncio.Event()
-    #
-    #     # Запись таска и флага в общий словарь (флаг пока опущен)
-    #     WORKING_CLIENTS[acc_pk] = [stop_flag, task]
-    #
-    # except Exception as err:
-    #     await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
-    #     return
 
 
 @Client.on_message(filters.me & filters.private & stop_client_filter)

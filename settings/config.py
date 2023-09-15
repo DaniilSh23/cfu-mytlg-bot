@@ -59,5 +59,6 @@ STATES_DCT = dict()     # Состояния бота
 # Разные константы
 PAUSE_BETWEEN_JOIN_TO_CHANNELS = tuple(map(lambda x: int(x), os.environ.get("PAUSE_BETWEEN_JOIN_TO_CHANNELS").split()))
 PAUSE_BETWEEN_FIVE_CHANNELS = tuple(map(lambda x: int(x), os.environ.get("PAUSE_BETWEEN_FIVE_CHANNELS").split()))
-FLOOD_WAIT_LIMIT = os.environ.get("FLOOD_WAIT_LIMIT")
+FLOOD_WAIT_LIMIT = int(os.environ.get("FLOOD_WAIT_LIMIT"))
 
+SENTRY_DSN = os.environ.get("SENTRY_DSN")

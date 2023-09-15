@@ -133,7 +133,7 @@ async def check_channel_async(app, channel_link):   # TODO: эта дрочь п
             break
 
         except FloodWait as err:
-            if int(err.value) > FLOOD_WAIT_LIMIT:
+            if int(err.value) >= FLOOD_WAIT_LIMIT:
                 MY_LOGGER.warning(f'Получен слишком высокий флуд: {err.value} сек.')
                 error = (f'Получен слишком высокий флуд: {err.value} сек.'
                          f'Оригинальный текст ошибки: {err!r}')
@@ -150,9 +150,9 @@ async def check_channel_async(app, channel_link):   # TODO: эта дрочь п
                                          f"| {err!r}",
                     "account": int(app.acc_pk),
                 })
-                await set_acc_flags(acc_pk=app.acc_pk, waiting=True)
+                await set_acc_flags(acc_pk=app.acc_pk, waiting=True, is_run=True, banned=False)
                 await asyncio.sleep(int(err.value))
-                await set_acc_flags(acc_pk=app.acc_pk, waiting=False)
+                await set_acc_flags(acc_pk=app.acc_pk, waiting=False, is_run=True, banned=False)
                 MY_LOGGER.debug(f'Повторяем попытку вступить в канал.')
                 action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
                 continue
@@ -205,6 +205,23 @@ async def check_channel_async(app, channel_link):   # TODO: эта дрочь п
             action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
             break
 
+        except UserDeactivatedBan as err:
+            MY_LOGGER.error(f'Аккаунт {app.acc_pk!r} получил бан при подписке на канал. Текст ошибки: {err!r}')
+            error = err
+            success = False
+            brake_ch = True
+            # Записываем данные об ошибке аккаунта
+            await post_account_error(req_data={
+                "token": TOKEN,
+                "error_type": "необрабатываемая_ошибка",
+                "error_description": f"Необрабатываемая ошибка для аккаунта {app.acc_pk} | {err!r}",
+                "account": int(app.acc_pk),
+            })
+            action_for_story = f'{datetime.datetime.now()} | {error}\n{action_for_story}'
+            await set_acc_flags(acc_pk=app.acc_pk, banned=True, is_run=False, waiting=False)
+            WORKING_CLIENTS[app.acc_pk][2] = None
+            break
+
         except Exception as err:
             MY_LOGGER.warning(f'Ошибка при проверке канала: {err}')
             error = f'Необрабатываемая ошибка: {err!r}'
@@ -234,7 +251,7 @@ async def check_channel_async(app, channel_link):   # TODO: эта дрочь п
     else:
         return {
             'success': success,
-            'break': brake_ch,
+            'break_ch': brake_ch,
             'result': {
                 'ch_id': 'undefined',
                 'ch_name': None,
