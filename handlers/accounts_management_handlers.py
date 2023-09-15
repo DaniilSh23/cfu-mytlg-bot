@@ -56,15 +56,15 @@ async def start_client_handler(_, update):
         # Флаг остановки таска
         stop_flag = asyncio.Event()
 
-        # Запись таска и флага в общий словарь (флаг пока опущен)
-        WORKING_CLIENTS[acc_pk] = [stop_flag, task]
+        # Запись таска, флага остановки и флага запуска в общий словарь (флаги пока опущены)
+        WORKING_CLIENTS[acc_pk] = [stop_flag, task, False]
 
     except Exception as err:
         await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name)
         return
 
     # Запрашиваем список каналов
-    if WORKING_CLIENTS[acc_pk][2]:
+    if WORKING_CLIENTS[acc_pk]:
         get_channels_rslt = await get_channels_for_acc(acc_pk=acc_pk)
         if not get_channels_rslt:
             await stop_client_async_task(acc_pk=acc_pk, session_name=session_name)

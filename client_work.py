@@ -1,7 +1,6 @@
-from pyrogram.errors import UserDeactivatedBan, FloodWait
-from pyrogram.connection.connection import Connection as pyro_connection
+from pyrogram.errors import UserDeactivatedBan
 
-from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME, FLOOD_WAIT_LIMIT, CLIENT_CHANNELS
+from settings.config import WORKING_CLIENTS, MY_LOGGER, BOT_USERNAME, CLIENT_CHANNELS
 import uvloop
 from pyrogram import Client
 
@@ -49,7 +48,8 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
         MY_LOGGER.debug(f'Клиент {session_name!r} отправляет команду /start боту')
         async with client as client:
             send_start = await client.send_message(chat_id=BOT_USERNAME, text='/start')
-            MY_LOGGER.debug(f'Результат отправки клиентом {session_name!r} команды /start боту: {send_start}')
+            MY_LOGGER.debug(f'Результат отправки клиентом {session_name!r} команды /start боту: '
+                            f'{True if send_start.id else False}')
 
         await client.start()    # Стартуем клиент аккаунта
         stop_flag = WORKING_CLIENTS.get(acc_pk)[0]
@@ -66,7 +66,7 @@ async def client_work(session_name, workdir, acc_pk, proxy_str=None):
         WORKING_CLIENTS[acc_pk][2] = None
         await stop_account_actions(acc_pk=acc_pk, err=err, session_name=session_name, error_type='ban',
                                    err_text=f'Аккаунт {acc_pk} был забанен.')
-        await set_acc_flags(acc_pk=acc_pk, banned=True)
+        await set_acc_flags(acc_pk=acc_pk, banned=True, is_run=False, waiting=False)
 
     except ConnectionError as err:
         MY_LOGGER.error(f'CONNECTION ERRRRRR! {err}')

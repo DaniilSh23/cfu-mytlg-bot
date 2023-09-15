@@ -115,65 +115,70 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
             })
             if check_ch_rslt.get('break_ch'):
                 MY_LOGGER.warning(f'Останавливаем подписку на каналы аккаунтом PK == {client.acc_pk!r}')
+                task_status = 'error'
                 break
             continue
-
-        # Успешная подписка
-        success_subs += 1
-        actions_story = f'{check_ch_rslt.get("action_story")}\n{actions_story}'
-        i_ch_dct = {
-            'ch_pk': i_ch_pk,
-            'success': check_ch_rslt.get('success'),
-            'ch_id': check_ch_rslt.get('result').get('ch_id'),
-            'ch_name': check_ch_rslt.get('result').get('ch_name'),
-            'ch_lnk': i_ch_lnk,
-            'description': check_ch_rslt.get('result').get('description'),
-            'subscribers_numb': check_ch_rslt.get('result').get('members_count')
-        }
-        task_result_dct.get('results').append(i_ch_dct)
-        complete_channels['channels'].append(i_ch_dct)
-
-        # Пауза перед следующей подпиской
-        if ch_numb % 5 == 0 and ch_numb < total_ch:
-            sleep_time = random.randint(*PAUSE_BETWEEN_FIVE_CHANNELS)
-            MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
-                            f'Отправляем запрос на запись каналов, на которые уже подписались.')
-
-            # complete_channels = {     # TODO: потом убрать, как будет ясно, что всё ок
-            #     "token": TOKEN,
-            #     "acc_pk": int(client.acc_pk),
-            #     "channels": [i_ch for i_ch in task_result_dct.get('results')[ch_numb - 5:] if i_ch.get("success")],
-            # }
-
-            ch_update_rslt = await update_channels(req_data=complete_channels)
-            if not ch_update_rslt:
-                MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
-            complete_channels['channels'] = []
-
-            # Отправляем счётчики подписок, историю действий и очищаем эти переменные
-            rslt = await send_subscription_results(
-                task_pk=int(cmd_data_dct.get("task_pk")),
-                actions_story=actions_story,
-                success_subs=success_subs,
-                fail_subs=fail_subs,
-            )
-            if not rslt:
-                MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | '
-                                  f'Не удался запрос для записи счетчиков и истории подписок. '
-                                  f'Их значения до очистки:\n\tactions_story == {actions_story!r}'
-                                  f'\n\tsuccess_subs == {success_subs!r}\n\tfail_subs == {fail_subs!r}')
-            actions_story = ''
-            success_subs = 0
-            fail_subs = 0
-
         else:
-            sleep_time = random.randint(*PAUSE_BETWEEN_JOIN_TO_CHANNELS)
+            # Успешная подписка
+            success_subs += 1
+            actions_story = f'{check_ch_rslt.get("action_story")}\n{actions_story}'
+            i_ch_dct = {
+                'ch_pk': i_ch_pk,
+                'success': check_ch_rslt.get('success'),
+                'ch_id': check_ch_rslt.get('result').get('ch_id'),
+                'ch_name': check_ch_rslt.get('result').get('ch_name'),
+                'ch_lnk': i_ch_lnk,
+                'description': check_ch_rslt.get('result').get('description'),
+                'subscribers_numb': check_ch_rslt.get('result').get('members_count')
+            }
+            task_result_dct.get('results').append(i_ch_dct)
+            complete_channels['channels'].append(i_ch_dct)
 
-        if ch_numb < total_ch:  # Проверка, чтобы не ждать после крайней подписки
-            MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | Пауза перед следующей подпиской {sleep_time} сек.')
-            await asyncio.sleep(sleep_time)
-            MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
-                            f'Город засыпает, просыпается аккаунт для дальнейших подписок на каналы.')
+            # Пауза перед следующей подпиской после каждого 5 канала
+            if ch_numb % 5 == 0 and ch_numb < total_ch:
+                sleep_time = random.randint(*PAUSE_BETWEEN_FIVE_CHANNELS)
+                MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
+                                f'Отправляем запрос на запись каналов, на которые уже подписались.')
+
+                # complete_channels = {     # TODO: потом убрать, как будет ясно, что всё ок
+                #     "token": TOKEN,
+                #     "acc_pk": int(client.acc_pk),
+                #     "channels": [i_ch for i_ch in task_result_dct.get('results')[ch_numb - 5:] if i_ch.get("success")],
+                # }
+
+                ch_update_rslt = await update_channels(req_data=complete_channels)
+                if not ch_update_rslt:
+                    MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | Не удался запрос для записи каналов')
+                complete_channels['channels'] = []
+
+                # Отправляем счётчики подписок, историю действий и очищаем эти переменные
+                rslt = await send_subscription_results(
+                    task_pk=int(cmd_data_dct.get("task_pk")),
+                    actions_story=actions_story,
+                    success_subs=success_subs,
+                    fail_subs=fail_subs,
+                )
+                if not rslt:
+                    MY_LOGGER.warning(f'Аккаунт PK == {client.acc_pk!r} | '
+                                      f'Не удался запрос для записи счетчиков и истории подписок. '
+                                      f'Их значения до очистки:\n\tactions_story == {actions_story!r}'
+                                      f'\n\tsuccess_subs == {success_subs!r}\n\tfail_subs == {fail_subs!r}')
+                actions_story = ''
+                success_subs = 0
+                fail_subs = 0
+            # Обычная пауза перед следующей подпиской
+            else:
+                sleep_time = random.randint(*PAUSE_BETWEEN_JOIN_TO_CHANNELS)
+
+            # Проверка, чтобы не ждать после крайней подписки (условие выполняется, если цикл подписок ещё не закончен)
+            if ch_numb < total_ch:
+                MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | Пауза перед следующей подпиской {sleep_time} сек.')
+                await asyncio.sleep(sleep_time)
+                MY_LOGGER.debug(f'Аккаунт PK == {client.acc_pk!r} | '
+                                f'Город засыпает, просыпается аккаунт для дальнейших подписок на каналы.')
+    # Если итерация прошла без прерываний
+    else:
+        task_status = 'success'
 
     # Блок ниже выполняется по окончании итерации по каналам
     MY_LOGGER.debug(f'Отправляем в БД результаты подписки аккаунтом PK == {client.acc_pk!r} с флагом завершения!')
@@ -182,7 +187,7 @@ async def subscribe_to_channels(client, update):    # TODO: эта дрочь п
                 actions_story=actions_story,
                 success_subs=success_subs,
                 fail_subs=fail_subs,
-                status='success',
+                status=task_status,
                 end_flag=True,
             )
 

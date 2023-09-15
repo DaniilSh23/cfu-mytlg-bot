@@ -45,13 +45,17 @@ async def set_acc_flags(acc_pk, is_run=None, waiting=None, banned=None):
         waiting - флаг ожидания (флуд)
         banned - флаг бана
     """
-    data = {
+    data = dict()
+    for key, val in {
         'token': TOKEN,
         'acc_pk': acc_pk,
         'is_run': is_run,
         'waiting': waiting,
         'banned': banned,
-    }
+    }.items():
+        if val is not None:
+            data[key] = val
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url=SET_ACC_FLAGS_URL, data=data) as response:
             if response.status == 200:
