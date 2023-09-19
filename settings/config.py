@@ -52,9 +52,14 @@ MY_LOGGER.add(  # системные логи в файл
 )
 
 # Словари для хранения чего-либо
-WORKING_CLIENTS = dict()    # Словарь для запущенных клиентов
-CLIENT_CHANNELS = dict()    # Каналы для запущенных клиентов
-STATES_DCT = dict()     # Состояния бота
+#
+# Словарь для запущенных клиентов
+WORKING_CLIENTS = dict()
+# Каналы для запущенных клиентов
+# [{'pk': int, 'channel_id': str, 'channel_name': str, 'channel_link': str}, ...]
+CLIENT_CHANNELS = dict()
+# Состояния бота
+STATES_DCT = dict()
 
 # Разные константы
 PAUSE_BETWEEN_JOIN_TO_CHANNELS = tuple(map(lambda x: int(x), os.environ.get("PAUSE_BETWEEN_JOIN_TO_CHANNELS").split()))

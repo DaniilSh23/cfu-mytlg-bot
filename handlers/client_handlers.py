@@ -32,6 +32,12 @@ async def listening_chat_handler(client, update):
         MY_LOGGER.warning(f'Новостной пост из канала PK=={this_channel.get("pk")} не был обработан.')
         return
 
+    # Формируем ссылку на пост
+    if update.sender_chat.username:
+        post_link = f"https://t.me/{update.sender_chat.username}/{update.id}"
+    else:
+        post_link = f"https://t.me/c/{str(update.sender_chat.id)[3:]}/{update.id}"
+
     # Проверка на наличие в постах эмбеддингов
     posts_lst = []
     for i_post in related_news:
@@ -53,13 +59,15 @@ async def listening_chat_handler(client, update):
             MY_LOGGER.error(f'Необрабатываемая проблема на этапе фильтрации поста и запросов к OpenAI. '
                             f'Пост будет отброшен. Ошибка: {err} | Текст поста: {update.text!r}')
             return
+
         if all(filtration_rslt):
             MY_LOGGER.debug(f'Пост прошёл фильтры, отправляем его в БД.')
             await write_new_post(
                 ch_pk=this_channel.get("pk"),
                 text=update.text,
                 # Тут через map преобразуем float в str и соединяем это всё дело через пробел
-                embedding=' '.join(list(map(lambda numb: str(numb), post_filters_obj.new_post_embedding)))
+                embedding=' '.join(list(map(lambda numb: str(numb), post_filters_obj.new_post_embedding))),
+                post_link=post_link,
             )
         else:
             MY_LOGGER.debug(f'Фильтры для поста не пройдены. Откидываем пост.')
@@ -70,7 +78,8 @@ async def listening_chat_handler(client, update):
             ch_pk=this_channel.get("pk"),
             text=update.text,
             # Тут через map преобразуем float в str и соединяем это всё дело через пробел
-            embedding=' '.join(list(map(lambda numb: str(numb), new_post_embedding)))
+            embedding=' '.join(list(map(lambda numb: str(numb), new_post_embedding))),
+            post_link=post_link,
         )
 
 
