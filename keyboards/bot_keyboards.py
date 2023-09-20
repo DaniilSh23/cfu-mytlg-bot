@@ -1,22 +1,24 @@
+from typing import Dict, Tuple
+
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from keyboards.bot_buttons import BUTTONS_DCT
 from settings.config import START_SETTINGS_FORM
 
 
-async def form_webapp_kbrd(form_link, btn_text):
+async def form_webapp_kbrd(buttons_data):
     """
     Формирование клавиатуры с одной WebApp кнопкой
-    :param form_link: ссылка на веб-форму.
-    :param btn_text: текст кнопки.
+    :param buttons_data: tuple - Данные для клавиатуры ((название кнопки, ссылка на страницу), ...).
     """
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
-                text=btn_text,
-                web_app=WebAppInfo(url=form_link)
+                text=name,
+                web_app=WebAppInfo(url=link)
             )
-        ],
+        ]
+        for name, link in buttons_data
     ])
 
 

@@ -1,3 +1,7 @@
+"""
+Различные настройки и константы проекта.
+"""
+
 import os
 import sys
 
@@ -32,9 +36,11 @@ ACCOUNT_ERR_URL = f'{BASE_HOST_URL}mytlg/account_error/'
 # Ссылки на веб-страницы
 START_SETTINGS_FORM = f'{BASE_HOST_URL}mytlg/start_settings/'
 WRITE_INTERESTS_FORM = f'{BASE_HOST_URL}mytlg/write_interests/'
+BLACK_LIST_FORM = f'{BASE_HOST_URL}mytlg/black_list/'
 # TODO: закомментить, это тест
 # START_SETTINGS_FORM = f'https://yandex.ru'
 # WRITE_INTERESTS_FORM = f'https://yandex.ru'
+# BLACK_LIST_FORM = f'https://b9d8-78-30-211-223.ngrok-free.app/mytlg/'
 
 
 # Настройки логгера
